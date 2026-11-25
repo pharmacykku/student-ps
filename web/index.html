@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบฐานข้อมูลนักศึกษา · คณะเภสัชศาสตร์ มข.</title>
+<style>
+  html,body{margin:0;height:100%;background:#f4f5ee;font-family:Sarabun,'Noto Sans Thai',system-ui,sans-serif}
+  iframe{position:fixed;inset:0;width:100%;height:100%;border:0}
+  .fb{position:fixed;inset:0;display:none;place-items:center;text-align:center;padding:24px;color:#2f3a12}
+  .fb a{display:inline-block;margin-top:12px;background:#4a5a14;color:#fff;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+<!-- แก้ลิงก์ด้านล่างเป็นลิงก์ /exec ของ Web app (Deploy → Manage deployments) -->
+<script>
+  const APP = 'https://script.google.com/macros/s/ใส่-DEPLOYMENT-ID/exec';
+  // ?admin หรือ #admin = หน้าเจ้าหน้าที่ · ไม่มี = Dashboard
+  const admin = /admin/.test(location.search + location.hash);
+  const url = APP + (admin ? '?page=admin' : '');
+  document.write('<iframe src="' + url + '" allow="clipboard-write" title="ระบบฐานข้อมูลนักศึกษา"></iframe>');
+</script>
+<div class="fb" id="fb"><div><b>เปิดระบบไม่ได้ในหน้านี้</b><br>กดปุ่มด้านล่างเพื่อเปิดระบบโดยตรง<br><a id="go" href="#">เปิดระบบฐานข้อมูลนักศึกษา</a></div></div>
+<script>document.getElementById('go').href = url;</script>
+<noscript><a href="https://script.google.com/">เปิดระบบ</a></noscript>
+</body>
+</html>
