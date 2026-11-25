@@ -17,6 +17,7 @@ const SH = {
   SETTINGS: 'ตั้งค่า',
   COURSES: 'รายวิชา',
   GRADCHK: 'สรุปตรวจสอบจบ',
+  ENGTEST: 'ผลสอบภาษาอังกฤษ',
   ADVISORS: 'อาจารย์ที่ปรึกษา',
   REPORTLOG: 'ประวัติส่งรายงาน',
   ACCESS: 'บันทึกการเข้าใช้',
@@ -63,6 +64,7 @@ const ACCESS_HEADERS = ['เวลา', 'อีเมล', 'ชื่อ', 'เ�
 const LOG_HEADERS = ['เวลา', 'ผู้ใช้', 'การกระทำ', 'รหัสนักศึกษา', 'รายละเอียด'];
 const FILE_HEADERS = ['เวลา', 'รหัสนักศึกษา', 'ประเภท', 'ชื่อไฟล์', 'FileId', 'URL', 'ผู้อัปโหลด'];
 const COURSE_HEADERS = ['รหัสนักศึกษา', 'หมวด', 'รหัสวิชา', 'ชื่อวิชา', 'หน่วยกิต', 'ครั้งที่', 'ภาคการศึกษา', 'ปีการศึกษา', 'เกรด', 'เกรดล่าสุด', 'อัปเดตเมื่อ'];
+const ENG_HEADERS = ['รหัสนักศึกษา', 'ประเภทการสอบ', 'คะแนน', 'ผล', 'วันที่สอบ', 'หมายเหตุ', 'นำเข้าโดย', 'นำเข้าเมื่อ'];
 const GRADCHK_HEADERS = ['รหัสนักศึกษา', 'ชื่อในไฟล์', 'ชั้นปีในไฟล์', 'รหัสหลักสูตร', 'หลักสูตร', 'หน่วยกิตต้องผ่าน', 'หน่วยกิตที่ลง', 'หน่วยกิตผ่าน', 'ขาด', 'GPAX', 'ภาษาอังกฤษ', 'รอเกรด (วิชา)', 'ผลตรวจ REG', 'หมวดไม่ผ่าน', 'สถานะหมวด (JSON)', 'วันที่รายงาน REG', 'ไฟล์', 'อัปโหลดเมื่อ', 'ผู้อัปโหลด', 'ข้อมูล ณ ภาค'];
 const ADVISOR_HEADERS = ['ชื่ออาจารย์ที่ปรึกษา', 'อีเมล', 'หมายเหตุ', 'สาขาวิชา'];
 const REPORTLOG_HEADERS = ['เวลา', 'ภาคการศึกษา', 'อาจารย์ที่ปรึกษา', 'อีเมล', 'จำนวนต่ำกว่าเกณฑ์', 'จำนวนเฝ้าระวัง', 'สถานะ', 'ผู้ส่ง'];
@@ -1413,7 +1415,7 @@ function adminGetAcademic(token, id) {
       const c = { reg: {}, final: {}, name: {}, hist: {}, cat: {} };
       out.courses.forEach(x => { const k = String(x.code).trim(); c.name[k] = x.name; if (x.grade !== 'W') c.reg[k] = true; if (x.last) { c.final[k] = String(x.grade).trim(); c.cat[k] = String(x.cat || ''); } else if (!c.cat[k]) c.cat[k] = String(x.cat || ''); });
       const gc = eligCfg_().grad.conds, kc = gc.find(x => x.type === 'computer'), km = gc.find(x => x.type === 'misCat');
-      out.extra = gradExtra_(c, { english: out.summary['ภาษาอังกฤษ'] }, readPlan_()[String(out.summary['รหัสหลักสูตร'] || '')], kc && kc.p.codes, km && km.p.codes);
+      out.extra = gradExtra_(c, { english: out.summary['ภาษาอังกฤษ'] }, readPlan_()[String(out.summary['รหัสหลักสูตร'] || '')], kc && kc.p.codes, km && km.p.codes, id);
     } catch (e) {}
   }
   return out;
@@ -1886,17 +1888,16 @@ function planReqCodes_(P, extra) {
   return o;
 }
 /** ตรวจเสริมของ 1 คน: สอบคอม (รหัสวิชา), อังกฤษ, รายวิชาบังคับที่หล่นไปหมวดเลือกเสรี */
-function gradExtra_(c, g, P, compCodes, extraReq) {
+function gradExtra_(c, g, P, compCodes, extraReq, id) {
   c = c || { reg: {}, final: {}, name: {}, hist: {}, cat: {} }; c.cat = c.cat || {};
   const ok = gr => gr && gr !== '--' && ['F', 'U', 'I', 'W'].indexOf(gr) < 0;
   const codes = String(compCodes || COMP_CODE).split(/[\s,;]+/).filter(Boolean);
   const k = codes.find(x => c.final[x] !== undefined || c.reg[x]);
   const gr = k ? c.final[k] || '' : '';
   const comp = { code: k || codes[0], name: k ? c.name[k] || '' : '', grade: gr, st: !k ? 'none' : ok(gr) ? 'pass' : gr === '--' || !gr ? 'pend' : 'fail' };
-  const eng = String((g && g.english) || '').trim(), engSt = !g ? 'nodata' : /^PASS$/i.test(eng) ? 'pass' : 'none';   // ใบตรวจสอบจบ: FAIL/ว่าง = ยังไม่สอบ
   const req = planReqCodes_(P, extraReq);
   const mis = Object.keys(c.cat).filter(x => isFreeElec_(c.cat[x]) && req[x.toUpperCase()]).map(x => ({ code: x, name: c.name[x] || req[x.toUpperCase()].name, grade: c.final[x] || '', planCode: req[x.toUpperCase()].code, cat: c.cat[x] }));
-  return { comp, eng: { st: engSt, v: eng }, mis, hasPlan: !!(P && P.courses && P.courses.length) };
+  return { comp, eng: engOf_(id, g), mis, hasPlan: !!(P && P.courses && P.courses.length) };
 }
 /** ระดับตรวจตามแผนรายปี/ภาค: { "1/1": "pass" | "reg" } · spec เช่น { pass: ['1','5/1'], reg: ['5/2'] } */
 function planLv_(spec, extra) {
@@ -2049,7 +2050,7 @@ function eligComputeRaw_(mode, year) {
     const P = P0 && Object.assign({}, P0, { courses: P0.courses.filter(majOk) });
     const notes = []; if (P0 && !sm && P0.courses.some(x => x.maj)) notes.push('ยังไม่ระบุสาขาเน้น — ยังไม่ได้ตรวจรายวิชาเฉพาะสาขา');
     const kc = CO.find(x => x.type === 'computer'), km = CO.find(x => x.type === 'misCat');
-    const X = gradExtra_(c, g, P, kc && kc.p.codes, km && km.p.codes);
+    const X = gradExtra_(c, g, P, kc && kc.p.codes, km && km.p.codes, id);
     base.comp = X.comp; base.eng = X.eng; base.mis = X.mis;
     // รายวิชา F/U/I ที่เคยติด: แก้แล้ว (เกรดล่าสุดผ่าน) / ยังไม่แก้
     const fl = Object.keys(c.hist).filter(k => c.hist[k].some(h => BAD.indexOf(h.g) >= 0)).map(k => {
@@ -2129,7 +2130,7 @@ function eligComputeRaw_(mode, year) {
         case 'minCredits': push(g.passed !== '' && Number(g.passed) >= k.p.v, 'ผ่าน ' + (g.passed === '' ? '–' : g.passed) + ' หน่วยกิต', (k.name || T.label) + ' ' + k.p.v); break;
         case 'regMissing': push(!(Number(g.missing) > 0), Number(g.missing) > 0 ? 'หน่วยกิตขาด ' + g.missing : 'ไม่ขาดหน่วยกิต'); break;
         case 'catPass': { const bad = (g.cats || []).filter(x => x.status && x.status !== 'PASS'); push(!bad.length, bad.length ? 'หมวดยังไม่ผ่าน: ' + bad.map(x => x.no + ' ' + x.name + ' (' + x.status + ')').join(', ') : 'ผ่านทุกหมวด'); break; }
-        case 'english': push(X.eng.st === 'pass', X.eng.st === 'pass' ? 'สอบแล้ว · ผล PASS' : 'ยังไม่สอบ' + (X.eng.v ? ' (ใบตรวจสอบจบ: ' + X.eng.v + ')' : '')); break;
+        case 'english': push(X.eng.st === 'pass', engTxt_(X.eng)); break;
         case 'computer': { const q = X.comp; push(q.st === 'pass', q.st === 'pass' ? 'สอบแล้ว · ' + q.code + ' เกรด ' + q.grade : q.st === 'none' ? 'ยังไม่มีรายวิชา ' + q.code + ' (ยังไม่สอบ)' : q.st === 'pend' ? q.code + ' รอผล' : q.code + ' เกรด ' + q.grade + ' (ยังไม่ผ่าน)', (k.name || 'สอบคอมพิวเตอร์ผ่าน') + ' (' + (k.p.codes || COMP_CODE) + ')'); break; }
         case 'misCat': {
           if (!X.hasPlan && !k.p.codes) { push(false, 'ยังไม่มีแผนการศึกษาของหลักสูตร ' + g.cur + ' (ตรวจรายวิชาบังคับไม่ได้)'); break; }
@@ -2353,6 +2354,84 @@ function adminProbation(token, termKey) {
       status: p.status, why: p.why, term: last.term, gpax: last.gpax, consec: p.consec, hist: p.hist.slice(-6) });
   });
   return { cfg: c, types: ACAD_TYPES, rows, term: termKey ? termLabel_(termKey) : '' };
+}
+// ======================= ผลสอบภาษาอังกฤษ / สอบคอมพิวเตอร์ =======================
+/** ผลสอบภาษาอังกฤษที่นำเข้า (ชีต "ผลสอบภาษาอังกฤษ") → { id: [ {test, score, result, date, pass} ] } */
+function engMap_() {
+  return memo_('engm', () => {
+    const out = {}, sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SH.ENGTEST);
+    if (!sh || sh.getLastRow() < 2) return out;
+    sh.getRange(2, 1, sh.getLastRow() - 1, ENG_HEADERS.length).getValues().map(r => r.map(engStr_)).forEach(r => {
+      const id = normId_(r[0]); if (!id) return;
+      const res = String(r[3] || '').trim();
+      (out[id] = out[id] || []).push({ test: String(r[1] || '').trim(), score: String(r[2] || '').trim(), result: res, date: String(r[4] || '').trim(), note: String(r[5] || '').trim(), pass: /^(pass|ผ่าน|p|s)$/i.test(res) });
+    });
+    return out;
+  });
+}
+const engStr_ = v => v instanceof Date ? Utilities.formatDate(v, 'Asia/Bangkok', 'dd/MM/yyyy') : String(v == null ? '' : v).trim();
+/** สถานะภาษาอังกฤษของ 1 คน: pass (ผ่าน) · taken (สอบแล้ว ยังไม่ผ่าน) · none (ยังไม่สอบ) · nodata (ไม่มีไฟล์ REG และไม่มีผลที่นำเข้า)
+ *  ใช้ผลที่นำเข้า (ถ้ามี) ร่วมกับช่อง "ภาษาอังกฤษ" ในใบตรวจสอบจบ (PASS = ผ่าน · FAIL/ว่าง = ยังไม่สอบ) */
+function engOf_(id, g) {
+  const L = (id && engMap_()[id]) || [], p = L.filter(x => x.pass).pop(), last = L[L.length - 1], reg = String((g && g.english) || '').trim();
+  const pick = x => x ? { test: x.test, score: x.score, result: x.result, date: x.date, n: L.length } : { n: 0 };
+  if (p) return Object.assign({ st: 'pass', v: reg, src: 'score' }, pick(p));
+  if (/^PASS$/i.test(reg)) return Object.assign({ st: 'pass', v: reg, src: 'reg' }, pick(last));
+  if (last) return Object.assign({ st: 'taken', v: reg, src: 'score' }, pick(last));
+  return { st: g ? 'none' : 'nodata', v: reg, src: 'reg', n: 0 };
+}
+function engTxt_(e) {
+  const sc = e.score ? (e.test ? e.test + ' ' : '') + e.score + (e.date ? ' · ' + e.date : '') : '';
+  return e.st === 'pass' ? 'สอบแล้ว · ผ่าน' + (sc ? ' (' + sc + ')' : e.src === 'reg' ? ' (ใบตรวจสอบจบ: PASS)' : '')
+    : e.st === 'taken' ? 'สอบแล้ว · ยังไม่ผ่าน' + (sc ? ' (' + sc + (e.result ? ' ' + e.result : '') + ')' : '')
+    : e.st === 'nodata' ? 'ยังไม่มีข้อมูล (ไม่มีไฟล์ตรวจสอบจบ/ผลสอบ)' : 'ยังไม่สอบ' + (e.v ? ' (ใบตรวจสอบจบ: ' + e.v + ')' : '');
+}
+/** รหัสวิชาสอบคอมพิวเตอร์ (จากเงื่อนไข "สอบคอมพิวเตอร์ผ่าน" ที่ตั้งไว้ · ค่าเริ่มต้น 000160) */
+function compCodes_() {
+  let codes = []; try { const CFG = eligCfg_(); Object.keys(CFG).forEach(m => ((CFG[m] && CFG[m].conds) || []).forEach(c => { if (c.type === 'computer') codes = codes.concat(String((c.p && c.p.codes) || '').split(/[\s,;]+/)); })); } catch (e) {}
+  codes = codes.filter(Boolean).filter((x, i, a) => a.indexOf(x) === i); return codes.length ? codes : [COMP_CODE];
+}
+/** รายชื่อนักศึกษา (กำลังศึกษา) + สถานะสอบภาษาอังกฤษ / สอบคอมพิวเตอร์ */
+function adminTestStatus(token) {
+  tabGuard_(auth_(token), 'pElig');
+  return verCache_('tests', 3600, () => {
+    const st = readTable_(SH.STUDENTS), H = idx_(st.headers), gc = gradChkMap_(), cs = coursesById_(), codes = compCodes_(), rows = [];
+    st.rows.forEach(r => {
+      const id = normId_(r[0]); if (!id || String(r[H['สถานะ']]).trim() !== 'กำลังศึกษา') return;
+      const c = cs[id], g = gc[id], X = gradExtra_(c, g, null, codes.join(','), '', id), h = c && c.hist[X.comp.code], last = h && h.length ? h[h.length - 1] : null;
+      const comp = Object.assign({}, X.comp, { term: last && last.t && last.y ? last.t + '/' + last.y : '', tries: h ? h.length : 0, hist: h ? h.map(x => x.g).join(' → ') : '' });
+      if (!c && !g) comp.st = 'nodata';
+      rows.push({ id, name: String(r[H['คำนำหน้า']] || '') + r[H['ชื่อ']] + ' ' + r[H['นามสกุล']], year: Number(r[H['ชั้นปี']]) || '', program: progLabel_(r, H),
+        major: H['สาขาเน้น'] !== undefined ? String(r[H['สาขาเน้น']] || '').trim() : '', advisor: normAdv_(r[H['อาจารย์ที่ปรึกษา']]), reg: g ? g.date : '', eng: X.eng, comp });
+    });
+    return { rows, codes, engN: Object.keys(engMap_()).length };
+  });
+}
+/** นำเข้าผลสอบภาษาอังกฤษ · rows: [{id, test, score, result, date, note}] · replace = true: ลบของเดิมทั้งหมดก่อน (เฉพาะผู้ดูแล) */
+function adminEngImport(token, rows, replace) {
+  const s = authW_(token); tabGuard_(s, 'pElig');
+  if (replace && ADMIN_ROLES.indexOf(s.role) < 0) throw new Error('การแทนที่ทั้งหมดใช้ได้เฉพาะผู้ดูแลระบบ');
+  rows = (rows || []).filter(x => x && normId_(x.id)).slice(0, 5000);
+  if (!rows.length) throw new Error('ไม่พบข้อมูล (ต้องมีคอลัมน์ รหัสนักศึกษา)');
+  return withLock_(() => {
+    const sh = ensureSheetLazy_(SH.ENGTEST, ENG_HEADERS), known = {}, now = new Date();
+    readTable_(SH.STUDENTS).rows.forEach(r => known[normId_(r[0])] = 1);
+    let old = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, ENG_HEADERS.length).getValues().map(r => r.map((v, j) => j < 6 ? engStr_(v) : v)) : [];
+    if (replace) old = [];
+    const key = x => [x[0], x[1], x[4]].map(v => String(v).trim().toLowerCase()).join('|'), at = {};
+    old.forEach((x, i) => at[key(x)] = i);
+    let add = 0, upd = 0; const unk = [];
+    rows.forEach(x => {
+      const id = normId_(x.id), row = [id, safe_(String(x.test || '').slice(0, 60)), safe_(String(x.score == null ? '' : x.score).slice(0, 30)), safe_(String(x.result || '').slice(0, 30)), safe_(String(x.date || '').slice(0, 30)), safe_(String(x.note || '').slice(0, 200)), s.u, now];
+      if (!known[id]) unk.push(id);
+      const k = key(row); if (at[k] !== undefined) { old[at[k]] = row; upd++; } else { at[k] = old.length; old.push(row); add++; }
+    });
+    if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, ENG_HEADERS.length).clearContent();
+    if (old.length) { sh.getRange(2, 1, old.length, 6).setNumberFormat('@'); sh.getRange(2, 1, old.length, ENG_HEADERS.length).setValues(old); }
+    delete MEMO_.engm;
+    log_(s.u, 'นำเข้าผลสอบภาษาอังกฤษ', '', (replace ? 'แทนที่ทั้งหมด · ' : '') + 'เพิ่ม ' + add + ' · อัปเดต ' + upd + (unk.length ? ' · ไม่พบรหัส ' + unk.length : ''));
+    return { add, upd, unknown: unk.slice(0, 50), unkN: unk.length, total: old.length };
+  });
 }
 function adminSaveProbCfg(token, o) {   // รูปแบบเดิม (ยังรองรับ) → แปลงเป็นเกณฑ์รวม
   const c = JSON.parse(JSON.stringify(acadRules_())), set = (t, k, v) => { const r = c.rules.find(x => x.type === t); if (r) r[k] = v; };
