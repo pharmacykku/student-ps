@@ -1878,7 +1878,7 @@ const ELIG_TYPES = {
   regDate:    { label: 'ไฟล์ตรวจสอบจบ (REG) อายุไม่เกิน', p: 'num', unit: 'วัน' }
 };
 const ELIG_MODES = ['intern4', 'intern6', 'grad', 'overdue'];
-const COMP_CODE = '000160', ELIG_VER = 2;
+const COMP_CODE = '000160', ELIG_VER = 3;
 const isFreeElec_ = cat => /เลือก\s*เสร/.test(String(cat || ''));
 /** รหัสวิชาบังคับตามแผน (รวมรหัสทดแทน) → รหัสหลักในแผน */
 function planReqCodes_(P, extra) {
@@ -1932,7 +1932,7 @@ function eligDefaults_() {
   const C = (type, on, sev, p) => ({ id: type, type, on, sev, p: p || {} });
   const grad = () => [C('noPending', true, 'block'), C('minGpax', true, 'block', { v: gg }), C('regMissing', true, 'block'), C('catPass', true, 'block'), C('noF', false, 'block', { v: 0 }), C('noI', false, 'block', { v: 0 }), C('english', true, 'block'), C('computer', true, 'block', { codes: COMP_CODE }), C('misCat', true, 'block', { codes: '' }), C('regDate', false, 'warn', { v: 90 })];
   return {
-    intern4: { year: 4, conds: [C('planReg', true, 'block', planLv_({ reg: ['1', '2', '3', '4'] })), C('noF', true, 'warn', { v: 0 }), C('noI', true, 'warn', { v: 0 }), C('noPending', true, 'warn'), C('minGpax', false, 'block', { v: 2 }), C('mustPass', false, 'block', { codes: '' })] },
+    intern4: { year: 4, conds: [C('planReg', true, 'block', planLv_({ reg: ['1', '2', '3', '4/1', '4/2'] })), C('noF', true, 'warn', { v: 0 }), C('noI', true, 'warn', { v: 0 }), C('noPending', true, 'warn'), C('minGpax', false, 'block', { v: 2 }), C('mustPass', false, 'block', { codes: '' })] },
     intern6: { year: 5, conds: [C('planReg', true, 'block', planLv_({ pass: ['1', '2', '3', '4', '5/1'], reg: ['5/2', '5/3'] }, { pend: 'fail', note: 'เกรดออกประมาณ มี.ค. — ต้องผ่านทุกวิชาก่อนออกฝึก' })), C('noF', true, 'block', { v: 0 }), C('noI', true, 'block', { v: 0 }), C('noPending', false, 'warn'), C('minGpax', false, 'block', { v: 2 }), C('mustPass', false, 'block', { codes: '' })] },
     grad: { year: 6, conds: grad() },
     overdue: { year: 6, years: 6, conds: grad() }
@@ -1961,7 +1961,9 @@ function eligCfg_() {
     if (Array.isArray(c.conds)) {
       D[m].conds = c.conds.filter(x => ELIG_TYPES[x.type]);
       // ค่าที่บันทึกก่อนมีเงื่อนไขใหม่ → เติมเงื่อนไขสอบคอม/หมวดเลือกเสรีให้อัตโนมัติ (ครั้งเดียว)
-      if (Number(c.v || 0) < ELIG_VER && (m === 'grad' || m === 'overdue')) eligDefaults_()[m].conds.filter(x => (x.type === 'computer' || x.type === 'misCat') && !D[m].conds.some(y => y.type === x.type)).forEach(x => D[m].conds.push(x));
+      // v3: ฝึกงานปี 4 ไม่นับภาค 4/3 (รายวิชาฝึกปฏิบัติวิชาชีพ PS114600/PS114601 ลงทะเบียนภาค 3 = ตัวการฝึกงานเอง)
+      if (Number(c.v || 0) < 3 && m === 'intern4') D[m].conds.forEach(x => { if (x.type === 'planReg' && x.p && x.p.lv && x.p.lv['4/3']) { const lv = Object.assign({}, x.p.lv); delete lv['4/3']; x.p = Object.assign({}, x.p, planDerive_(Object.assign({}, x.p, { lv }))); } });
+      if (Number(c.v || 0) < 2 && (m === 'grad' || m === 'overdue')) eligDefaults_()[m].conds.filter(x => (x.type === 'computer' || x.type === 'misCat') && !D[m].conds.some(y => y.type === x.type)).forEach(x => D[m].conds.push(x));
     }
   });
   ELIG_MODES.forEach(m => D[m].conds = eligMergePlan_(D[m].conds));
@@ -2015,7 +2017,7 @@ function adminEligibility(token, mode, year) {
 }
 /** ผลตรวจสิทธิ์ (แคชตามเวอร์ชันข้อมูล — คำนวณใหม่เฉพาะเมื่อมีการนำเข้า/แก้ข้อมูล/แก้เงื่อนไข) · ผลตรวจทานรายคนอ่านสดทุกครั้ง */
 function eligCompute_(mode, year) {
-  const R = verCache_('elig:' + mode + ':' + (Number(year) || ''), 3600, () => eligComputeRaw_(mode, year));
+  const R = verCache_('elig' + ELIG_VER + ':' + mode + ':' + (Number(year) || ''), 3600, () => eligComputeRaw_(mode, year));
   try { const REV = eligReviews_(R.round); R.rows.forEach(r => r.rev = REV[r.id] || null); } catch (e) {}
   try { R.snaps = eligSnapList_(mode); const set = getSettings_(); R.notify = { emails: set.ELIG_NOTIFY_EMAILS || '', on: set.ELIG_NOTIFY_ON !== 'off' }; } catch (e) {}
   return R;
