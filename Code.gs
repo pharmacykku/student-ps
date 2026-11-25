@@ -1892,7 +1892,7 @@ const ELIG_TYPES = {
   regDate:    { label: 'ไฟล์ตรวจสอบจบ (REG) อายุไม่เกิน', p: 'num', unit: 'วัน' }
 };
 const ELIG_MODES = ['intern4', 'intern6', 'grad', 'overdue'];
-const COMP_CODE = '000160', ELIG_VER = 4;
+const COMP_CODE = '000160', ELIG_VER = 5;
 const isFreeElec_ = cat => /เลือก\s*เสร/.test(String(cat || ''));
 /** รหัสวิชาบังคับตามแผน (รวมรหัสทดแทน) → รหัสหลักในแผน */
 function planReqCodes_(P, extra) {
@@ -2084,7 +2084,7 @@ function eligComputeRaw_(mode, year) {
     if (P && P.courses.length) for (let yy = 1; yy <= 6; yy++) {
       const L = P.courses.filter(x => x.year === yy); if (!L.length) continue;
       const cnt = { pass: 0, pend: 0, inc: 0, fail: 0, miss: 0 };
-      L.forEach(x => { const k = st1(x); cnt[k]++; if (k === 'miss') miss.push({ code: x.code, name: x.name || '', year: yy, term: (String(x.term || '').match(/[12]/) || [''])[0] }); });
+      L.forEach(x => { const k = st1(x); cnt[k]++; if (k === 'miss') miss.push({ code: x.code, name: x.name || '', year: yy, term: (String(x.term || '').match(/[123]/) || [''])[0] }); });
       years.push(Object.assign({ y: yy, need: L.length, st: cnt.miss || cnt.fail ? 'bad' : cnt.pend || cnt.inc ? 'warn' : 'ok' }, cnt));
     }
     if (needPlan && !(P && P.courses.length)) { rows.push(Object.assign(base, { status: 'noplan', checks: [], years, fl, miss, reasons: ['ยังไม่มีแผนการศึกษาของหลักสูตร ' + g.cur], warn: [] })); return; }
