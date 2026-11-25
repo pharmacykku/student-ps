@@ -1,0 +1,29 @@
+# อัปโค้ดขึ้น Google Apps Script อัตโนมัติเมื่อ push เข้า main
+# ต้องตั้ง Secrets ใน GitHub (Settings → Secrets and variables → Actions):
+#   CLASPRC_JSON   = เนื้อหาไฟล์ ~/.clasprc.json หลังรัน `clasp login` บนเครื่องตัวเอง
+#   SCRIPT_ID      = Script ID ของโปรเจกต์ Apps Script
+#   DEPLOYMENT_ID  = Deployment ID ของ Web app เดิม (เพื่อให้ลิงก์ /exec เดิมใช้ต่อได้)
+name: Deploy to Apps Script
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g @google/clasp@2.4.2
+      - name: Check manifest
+        run: test -f appsscript.json || (echo "ไม่พบ appsscript.json — คัดลอกจาก Apps Script editor มาไว้ใน repo ก่อน" && exit 1)
+      - name: Write credentials
+        run: |
+          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"."}' > .clasp.json
+      - name: Push code
+        run: clasp push -f
+      - name: Update web app deployment
+        run: clasp deploy -i "${{ secrets.DEPLOYMENT_ID }}" -d "GitHub ${{ github.sha }}"

@@ -1,0 +1,7 @@
+# ข้อมูลลับ / ไฟล์ส่วนตัว — ห้ามขึ้น GitHub
+.clasprc.json
+node_modules/
+*.xlsx
+*.csv
+*.pdf
+.DS_Store

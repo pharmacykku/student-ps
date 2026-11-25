@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="th" data-pal="<?= pal ?>" data-app="<?= appUrl ?>">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard ฐานข้อมูลนักศึกษา</title>
+<?!= include('Styles') ?>
+<style>
+.hero .wrap{padding-top:22px;padding-bottom:84px}
+.hero-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:999px;padding:4px 12px;font-size:13px;backdrop-filter:blur(6px)}
+.hero h2{font-size:28px;margin:18px 0 0;line-height:1.25}
+.hero .lead{margin:4px 0 0;opacity:.9;font-size:15px}
+main.wrap{margin-top:-64px;position:relative;z-index:2}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:14px 16px;margin-bottom:16px}
+.filters label.f{min-width:180px}
+.filters .note{font-size:13px;color:var(--text-2);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.legend-pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border-radius:999px;padding:3px 10px}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.kpi{padding:16px;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:2px}
+.kpi::after{content:"";position:absolute;right:-26px;top:-26px;width:84px;height:84px;border-radius:50%;background:var(--brand-softer);z-index:0}
+.kpi > *{position:relative;z-index:1}
+.kpi .k-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.kpi .k-label{font-size:13px;color:var(--text-2);font-weight:500}
+.kpi .k-ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand)}
+.kpi .k-ico svg{width:18px;height:18px}
+.kpi .k-val{font-family:'Prompt',sans-serif;font-size:30px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums;margin-top:6px}
+.kpi .k-foot{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.kpi.hl{background:var(--hero);border-color:transparent;color:#fff}
+.kpi.hl::after{background:rgba(255,255,255,.1)}
+.kpi.hl .k-label,.kpi.hl .k-foot{color:rgba(255,255,255,.9)}
+.kpi.hl .k-ico{background:rgba(255,255,255,.2);color:#fff}
+.kpi.alert .k-ico{background:rgba(208,59,59,.12);color:var(--critical)}
+.kpi.alert .k-val{color:var(--critical)}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c12{grid-column:span 12}
+.chart-box{position:relative;height:300px}
+.chart-box.tall{height:360px}
+.card-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted);gap:4px;padding:16px;border:1.5px dashed var(--border-strong);border-radius:12px;background:var(--brand-softer)}
+.risk-cell{display:inline-flex;align-items:center;gap:6px}
+.ps-bar{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 8px;align-items:flex-end}
+.ps-bar label.f{min-width:140px}
+.ps-bar select{padding:10px 11px}
+.ps-f{flex:2 1 260px}.ps-fid{flex:1 1 200px}
+.ps-q{display:flex;align-items:center;gap:8px;border:1px solid var(--border-strong);border-radius:12px;padding:0 12px;background:var(--surface)}
+.ps-q:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 18%,transparent)}
+.ps-q .ico{color:var(--brand);width:18px;height:18px}
+.ps-q input{border:0;box-shadow:none!important;flex:1;padding:11px 0;font-size:15px;background:transparent}
+.ps-t tbody tr{cursor:pointer}
+.ps-t .av{width:32px;height:32px;border-radius:10px;background:var(--brand-soft);color:var(--brand-deep);display:inline-grid;place-items:center;font-weight:700;margin-right:8px;vertical-align:middle;font-family:'Prompt',sans-serif}
+.sex-sum{display:flex;gap:10px;flex-wrap:wrap;margin:2px 0 6px}
+.sex-sum .sx{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:12px;padding:6px 12px;font-size:13px;color:var(--text-2)}
+.sex-sum .sx b{font-family:'Prompt',sans-serif;font-size:20px;color:var(--text)}
+.sex-sum .sw{width:10px;height:10px;border-radius:3px}
+.od-kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 8px}
+.od-kpi .m{border:1px solid var(--border);border-radius:12px;padding:8px 10px}
+.od-kpi .m .l{font-size:12px;color:var(--text-2)}.od-kpi .m .v{font-family:'Prompt',sans-serif;font-size:24px;font-weight:700}
+.fbar{height:5px;border-radius:3px;background:var(--surface-2);margin-top:4px;overflow:hidden}.fbar i{display:block;height:100%;background:var(--critical);opacity:.7;border-radius:3px}
+.kd{font-weight:600}.kd.up{color:var(--good)}.kd.down{color:var(--critical)}.kd.flat{color:var(--text-2)}
+.ps-overlay{position:fixed;inset:0;background:rgba(40,15,0,.45);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;padding:32px 14px;z-index:600;overflow:auto}
+.ps-overlay.on{display:flex;animation:psFade .15s ease-out}
+.ps-ov2{z-index:650;align-items:center}
+@keyframes psFade{from{opacity:0}}
+.ps-modal{background:var(--surface);border-radius:20px;width:min(1080px,100%);box-shadow:var(--shadow-lg);overflow:hidden;animation:psPop .2s ease-out;border:1px solid var(--border)}
+@keyframes psPop{from{opacity:0;transform:translateY(12px) scale(.98)}}
+.ps-head{background:var(--hero);color:#fff;padding:18px 22px;display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.ps-head h3{margin:0;font-size:18px;display:flex;align-items:center;gap:8px;color:#fff}.ps-head h3::before{display:none}
+.ps-head p{margin:4px 0 0;font-size:13px;opacity:.9}
+.ps-x{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.16);color:#fff;cursor:pointer;display:grid;place-items:center}
+.ps-x:hover{background:rgba(255,255,255,.28)}
+.ps-body{padding:16px 22px 18px}
+.ps-pcard{background:var(--surface);border-radius:22px;width:min(460px,100%);box-shadow:var(--shadow-lg);overflow:hidden;animation:psPop .22s ease-out;border:1px solid var(--border)}
+.ps-pc-top{background:var(--hero);color:#fff;padding:22px 22px 54px;position:relative}
+.ps-pc-top .ps-x{position:absolute;right:14px;top:14px}
+.ps-pc-top small{opacity:.85;font-size:12.5px}
+.ps-pc-av{width:84px;height:84px;border-radius:24px;background:var(--surface);color:var(--brand-deep);display:grid;place-items:center;font-family:'Prompt',sans-serif;font-weight:700;font-size:34px;margin:-46px auto 0;position:relative;box-shadow:0 8px 24px rgba(40,60,20,.2);border:4px solid var(--surface)}
+.ps-pc-name{text-align:center;padding:10px 20px 0}
+.ps-pc-name h2{margin:0;font-size:20px}
+.ps-pc-name .id{color:var(--text-2);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.ps-cp{border:1px solid var(--line,#e5e5e5);background:transparent;color:var(--muted);cursor:pointer;width:26px;height:26px;border-radius:8px;display:inline-grid;place-items:center;vertical-align:middle;padding:0;margin-left:8px;position:relative;top:-2px}
+.ps-cp:hover{background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand)}.ps-cp .ico{width:15px;height:15px}.ps-cp.done{color:var(--good)}
+
+.ps-pc-chips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0 4px}
+.ps-pc-list{padding:10px 22px 20px}
+.ps-pc-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.ps-pc-row:last-child{border-bottom:0}
+.ps-pc-row .ic{width:34px;height:34px;border-radius:10px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;flex:none}
+.ps-pc-row .ic .ico{width:18px;height:18px}
+.ps-pc-row dt{font-size:12px;color:var(--muted)}.ps-pc-row dd{margin:0;font-weight:500}
+.ps-sec{position:relative;overflow-wrap:anywhere}
+.ps-blur{filter:blur(6px);user-select:none;color:var(--text-2);letter-spacing:.04em}
+.ps-eye{flex:none;align-self:center;width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--brand);cursor:pointer;display:grid;place-items:center;transition:.15s}
+.ps-eye:hover{background:var(--brand-soft)}.ps-eye.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.ps-eye .ico{width:19px;height:19px}.ps-eye .spin.sm{width:16px;height:16px;border-width:2px;margin:0}
+.ps-gpax{font-size:20px;font-family:'Prompt',sans-serif}
+.ps-err{color:var(--critical);font-size:13px}
+.ps-deep{width:100%;justify-content:center;text-decoration:none}
+.ps-ov2{padding:16px}
+.ps-pcard{display:flex;flex-direction:column;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px)}
+.ps-pcard>*{flex:none}.ps-pcard>.ps-pc-list{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+.ps-pc-top{padding:16px 22px 46px}.ps-pc-av{width:72px;height:72px;font-size:30px;margin-top:-40px;border-radius:20px}
+.ps-pc-row{padding:8px 0}
+@media (max-height:720px){.ps-pc-top{padding:12px 20px 38px}.ps-pc-av{width:60px;height:60px;font-size:24px;margin-top:-32px;border-radius:16px}.ps-pc-row{padding:6px 0}.ps-pc-row .ic{width:30px;height:30px}.ps-pc-list{padding:6px 22px 10px}}
+.ps-pc-list:not(.more) .ps-more~.ps-pc-row{display:none}
+.ps-more{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:6px 0 2px;padding:8px;border:1px dashed var(--border);border-radius:10px;background:var(--brand-softer);color:var(--brand);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.ps-more svg{transition:transform .2s}.ps-pc-list.more .ps-more svg{transform:rotate(180deg)}.ps-pc-list.more .ps-more{order:99}
+.ps-pc-list.more{display:flex;flex-direction:column}
+.ps-pc-foot{display:flex;justify-content:space-between;gap:8px;padding:12px 22px;background:var(--brand-softer);border-top:1px solid var(--border)}
+@media (max-width:640px){.ps-overlay{padding:0}.ps-ov2{padding:16px}.ps-modal{border-radius:0;min-height:100%}.ps-pcard{border-radius:18px}}
+.ps-dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px 18px;margin:4px 0}
+.ps-dl dt{font-size:12px;color:var(--muted)}.ps-dl dd{margin:0;font-weight:500}
+.ps-hl{background:rgba(250,178,25,.35);border-radius:3px}
+.foot{color:var(--muted);font-size:12.5px;text-align:center;padding:24px 0 8px}
+.section-title{grid-column:span 12;display:flex;align-items:center;gap:10px;margin:10px 0 -2px;font-family:'Prompt',sans-serif;font-weight:600;font-size:16px;color:var(--text)}
+.section-title span.n{width:26px;height:26px;border-radius:8px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-size:13px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--border)}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.c4,.c5,.c7{grid-column:span 6}}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.c4,.c5,.c6,.c7,.c8{grid-column:span 12}.chart-box{height:280px}.kpi .k-val{font-size:24px}.hero h2{font-size:22px}.filters label.f{min-width:0;flex:1 1 140px}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-top">
+      <div class="logo logo-img" role="img" aria-label="โลโก้คณะเภสัชศาสตร์ มหาวิทยาลัยขอนแก่น"></div>
+      <div class="title">
+        <h1>ฐานข้อมูลนักศึกษาระดับปริญญาตรี</h1>
+        <p id="facultyName">คณะเภสัชศาสตร์ มหาวิทยาลัยขอนแก่น</p>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-glass" onclick="openSearch()"><i class="ico" data-i="search"></i> ค้นหารายบุคคล</button>
+      <button class="btn-glass theme-btn" id="themeBtn" title="สลับโหมดสว่าง/มืด" aria-label="สลับโหมดสว่าง/มืด"><i class="ico" data-i="moon"></i></button>
+      <a class="btn-glass solid" id="adminLink" href="<?= appUrl ?>?page=admin" target="_top"><i class="ico" data-i="lock"></i> ผู้ดูแลระบบ</a>
+    </div>
+    <h2>ภาพรวมนักศึกษาและผลการเรียน</h2>
+    <p class="lead">ติดตามจำนวนนักศึกษา สถานะ และแนวโน้มกลุ่มเกรดเฉลี่ยต่ำกว่าเกณฑ์ รายชั้นปีและรายหลักสูตร</p>
+    <div class="hero-meta"><span class="chip" id="updated">กำลังโหลด…</span><span class="chip" id="termChip" style="display:none"></span><span class="chip"><i class="ico" data-i="shield-lock"></i> ข้อมูลเชิงสถิติ ไม่ระบุตัวบุคคล</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="filters">
+    <label class="f">หลักสูตร
+      <select id="fProgram"><option value="">ทุกหลักสูตร</option></select>
+    </label>
+    <label class="f" id="fProvWrap" style="display:none">จังหวัด (ปฐมภูมิ)
+      <select id="fProv"><option value="">ทุกจังหวัด</option></select>
+    </label>
+    <label class="f">ชั้นปี
+      <select id="fYear"><option value="">ทุกชั้นปี</option></select>
+    </label>
+    <label class="f">ข้อมูล ณ ภาค
+      <select id="fTerm"></select>
+    </label>
+    <button class="btn" id="btnReset"><i class="ico" data-i="undo"></i> ล้างตัวกรอง</button>
+    <button class="btn primary" onclick="openSearch()"><i class="ico" data-i="search"></i> ค้นหานักศึกษารายบุคคล</button>
+    <button class="btn" onclick="XP.open(summaryTable)"><i class="ico" data-i="download"></i> ส่งออกตาราง</button>
+    <button class="btn" onclick="dashPdf()"><i class="ico" data-i="file-pdf"></i> PDF Dashboard</button>
+    <div class="spacer"></div>
+    <span class="note" id="thresholdNote"></span>
+  </div>
+
+  <div class="ps-overlay" id="psOverlay" role="dialog" aria-modal="true" aria-labelledby="psTitle">
+  <section class="ps-modal" id="psCard">
+    <header class="ps-head">
+      <div><h3 id="psTitle"><i class="ico" data-i="search"></i> ค้นหานักศึกษารายบุคคล</h3><p>ค้นด้วยชื่อ-สกุล หรือรหัสนักศึกษา (ใช้ช่องใดช่องหนึ่ง หรือทั้งสองช่อง) · แสดงครั้งละ 10 รายการ · กดรายชื่อเพื่อดูรายละเอียด</p></div>
+      <button class="ps-x" onclick="closeSearch()" aria-label="ปิด"><i class="ico" data-i="x"></i></button>
+    </header>
+    <div class="ps-body">
+    <div class="toolbar ps-bar">
+      <label class="f ps-f">ชื่อ-สกุล<span class="ps-q"><i class="ico" data-i="users"></i><input type="search" id="psQ" placeholder="เช่น สมชาย หรือ สมชาย ใจดี" autocomplete="off"></span></label>
+      <label class="f ps-f ps-fid">รหัสนักศึกษา<span class="ps-q"><i class="ico" data-i="search"></i><input type="search" id="psId" inputmode="numeric" placeholder="เช่น 663150032" autocomplete="off" maxlength="11"></span></label>
+      <label class="f">ชั้นปี<select id="psYear"><option value="">ทุกชั้นปี</option></select></label>
+      <label class="f">หลักสูตร<select id="psProg"><option value="">ทุกหลักสูตร</option></select></label>
+      <button class="btn" id="psClear" style="align-self:flex-end"><i class="ico" data-i="undo"></i> ล้าง</button>
+    </div>
+    <div class="muted" id="psCount" style="font-size:13px;margin:4px 0 8px"></div>
+    <div class="table-wrap"><table class="t ps-t" id="psTbl"></table></div>
+    <div class="row" id="psPager" style="justify-content:flex-end;margin-top:10px"></div>
+    <p class="muted" style="font-size:12px;margin:10px 0 0"><i class="ico" data-i="lock"></i> แสดงเฉพาะข้อมูลที่คณะอนุญาต · ข้อมูลติดต่อ ผลการเรียนรายวิชา และบันทึกต่าง ๆ ดูได้ในระบบผู้ดูแลเท่านั้น</p>
+    </div>
+  </section>
+  </div>
+  <div class="ps-overlay ps-ov2" id="psCardOv" role="dialog" aria-modal="true">
+    <div class="ps-pcard" id="psPCard"></div>
+  </div>
+
+  <div id="loading" class="loading"><div class="spin"></div> กำลังโหลดข้อมูล…</div>
+
+  <div id="content" style="display:none">
+    <section class="kpis" id="kpis"></section>
+
+    <section class="grid">
+      <div class="section-title"><span class="n">1</span>จำนวนและสถานะนักศึกษา</div>
+      <div class="card c8">
+        <div class="card-head">
+          <div><h3>จำนวนนักศึกษารายชั้นปี แยกตามหลักสูตร</h3><p class="sub">เฉพาะสถานะกำลังศึกษา</p></div>
+        </div>
+        <div class="chart-box"><canvas id="chYear"></canvas></div>
+      </div>
+      <div class="card c4">
+        <h3>สถานะนักศึกษา</h3><p class="sub">ทุกสถานะตามตัวกรอง</p>
+        <div class="chart-box"><canvas id="chStatus"></canvas></div>
+      </div>
+
+      <div class="card c7" id="sexCard">
+        <div class="card-head"><div><h3>นักศึกษาชาย–หญิง รายชั้นปี</h3><p class="sub" id="sexSub">เฉพาะสถานะกำลังศึกษา · จำแนกจากคำนำหน้าชื่อ</p></div></div>
+        <div class="sex-sum" id="sexSum"></div>
+        <div class="chart-box" id="boxSex"><canvas id="chSex"></canvas></div>
+      </div>
+      <div class="card c5" id="odCard">
+        <h3>นักศึกษาตกค้าง (เปอร์)</h3><p class="sub">กำลังศึกษา ชั้นปี 6 ขึ้นไป หรือศึกษามาเกิน 6 ปี · ตามผลตรวจสอบจบ (REG)</p>
+        <div class="od-kpi" id="odKpi"></div>
+        <div class="chart-box" id="boxOd" style="height:220px"><canvas id="chOd"></canvas></div>
+      </div>
+      <div class="card c6" id="primCard">
+        <h3>โครงการพิเศษ ปฐมภูมิ แยกตามจังหวัด</h3><p class="sub">จำนวนนักศึกษากำลังศึกษา แยกชั้นปี · ขอนแก่น อุดรธานี สกลนคร หนองคาย</p>
+        <div class="chart-box" id="boxPrim"><canvas id="chPrim"></canvas></div>
+      </div>
+      <div class="card c6" id="majorCard">
+        <h3>สาขาเน้น (ชั้นปี 5–6)</h3><p class="sub">จำนวนนักศึกษากำลังศึกษาในแต่ละกลุ่มวิชาสาขาเน้น</p>
+        <div class="chart-box" id="boxMajor"><canvas id="chMajor"></canvas></div>
+      </div>
+
+      <div class="section-title"><span class="n">2</span>ผลการเรียนและกลุ่มเสี่ยง</div>
+      <div class="card c6">
+        <h3>กราฟใยแมงมุม: GPAX เฉลี่ยรายชั้นปี</h3>
+        <p class="sub">เปรียบเทียบแต่ละหลักสูตร (GPAX ล่าสุด นักศึกษากำลังศึกษา)</p>
+        <div class="chart-box tall" id="boxRadarGpa"><canvas id="chRadarGpa"></canvas></div>
+      </div>
+      <div class="card c6">
+        <div class="card-head">
+          <div><h3>กราฟใยแมงมุม: โปรไฟล์ความเสี่ยงรายชั้นปี</h3>
+          <p class="sub">ร้อยละนักศึกษาในแต่ละระดับ GPAX</p></div>
+        </div>
+        <div class="chart-box tall" id="boxRadarRisk"><canvas id="chRadarRisk"></canvas></div>
+      </div>
+
+      <div class="card c12">
+        <div class="card-head">
+          <div><h3>แนวโน้มเกรดเฉลี่ยต่ำกว่าเกณฑ์ รายภาคการศึกษา</h3>
+          <p class="sub" id="trendSub">แยกตามรุ่น (รหัสนักศึกษา)</p></div>
+          <div class="row">
+            <div class="seg" id="segMetric">
+              <button data-v="pct" class="on">ร้อยละ</button><button data-v="n">จำนวนคน</button><button data-v="avg">GPAX เฉลี่ย</button>
+            </div>
+            <div class="seg" id="segGroup">
+              <button data-v="cohort" class="on">รายรุ่น</button><button data-v="program">รายหลักสูตร</button><button data-v="all">รวม</button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-box tall" id="boxTrend"><canvas id="chTrend"></canvas></div>
+      </div>
+
+      <div class="card c6">
+        <h3>GPAX แรกเข้า (ม.ปลาย) เทียบปัจจุบัน ตามรอบการรับเข้า</h3>
+        <p class="sub">ค่าเฉลี่ยของนักศึกษากำลังศึกษาในแต่ละรอบ TCAS</p>
+        <div class="chart-box" id="boxRound"><canvas id="chRound"></canvas></div>
+      </div>
+      <div class="card c6">
+        <h3>แนวโน้มผลการเรียนรายบุคคล ตามรอบการรับเข้า</h3>
+        <p class="sub">ร้อยละนักศึกษาที่ GPA รายภาคมีแนวโน้มดีขึ้น / คงที่ / ลดลง (≥ 2 ภาค)</p>
+        <div class="chart-box" id="boxRoundTrend"><canvas id="chRoundTrend"></canvas></div>
+      </div>
+
+      <div class="card c6" id="histCard">
+        <h3>การกระจายของ GPAX ล่าสุด</h3><p class="sub">นักศึกษากำลังศึกษาที่มีผลการเรียน</p>
+        <div class="chart-box" id="boxHist"><canvas id="chHist"></canvas></div>
+      </div>
+      <div class="card c6" id="primCard2">
+        <h3>ผลการเรียน ปฐมภูมิ รายจังหวัด</h3><p class="sub">นับเฉพาะกำลังศึกษา</p>
+        <div class="table-wrap"><table class="t" id="tblPrim"></table></div>
+      </div>
+
+      <div class="card c6" id="fCard">
+        <h3>การติด F รายชั้นปี</h3><p class="sub" id="fSub">ร้อยละของนักศึกษากำลังศึกษาที่มีไฟล์ตรวจสอบจบในระบบ</p>
+        <div class="chart-box" id="boxF"><canvas id="chF"></canvas></div>
+      </div>
+      <div class="card c6" id="fCard2">
+        <h3>รายวิชาที่มีนักศึกษาติด F มากที่สุด</h3><p class="sub">10 อันดับ ตามตัวกรอง · นับจำนวนคน (ไม่ระบุตัวบุคคล)</p>
+        <div class="table-wrap"><table class="t" id="tblF"></table></div>
+      </div>
+
+      <div class="section-title"><span class="n">3</span>การคงอยู่ การลาออก และสรุปรายชั้นปี</div>
+      <div class="card c12">
+        <div class="card-head"><div><h3>อัตราการคงอยู่และสำเร็จการศึกษา รายรุ่น</h3>
+        <p class="sub">สัดส่วนสถานะปัจจุบันของนักศึกษาแต่ละรุ่น (ตามรหัสนักศึกษา) · ใช้ตัวกรองหลักสูตร · ไม่ใช้ตัวกรองชั้นปี</p></div></div>
+        <div class="chart-box" id="boxCohort" style="height:340px"><canvas id="chCohort"></canvas></div>
+      </div>
+      <div class="card c5">
+        <h3>แนวโน้มการลาออก รายภาคการศึกษา</h3><p class="sub">นับจากหมายเหตุ "ลาออก ภาค x/ปี"</p>
+        <div class="chart-box" id="boxResign"><canvas id="chResign"></canvas></div>
+      </div>
+      <div class="card c7">
+        <h3>สรุปกลุ่มเสี่ยงรายชั้นปี</h3><p class="sub">นับเฉพาะกำลังศึกษา · ไม่แสดงข้อมูลส่วนบุคคล</p>
+        <div class="table-wrap"><table class="t" id="tblRisk"></table></div>
+      </div>
+    </section>
+    <p class="foot">หน้านี้แสดงข้อมูลเชิงสถิติเท่านั้น ไม่มีข้อมูลระบุตัวบุคคล · งานบริการการศึกษา คณะเภสัชศาสตร์ มข.</p>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<?!= include('Export') ?>
+<script>
+let D = null;            // ข้อมูลจากเซิร์ฟเวอร์
+const charts = {};
+const state = { program: '', year: '', prov: '', metric: 'pct', group: 'cohort', cut: -1 };
+const PROGRAM_ORDER = ['ภาคปกติ', 'นานาชาติ', 'โครงการพิเศษ', 'โครงการพิเศษ ปฐมภูมิ'];
+
+// ---------- theme ----------
+function applyTheme(t) {
+  if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme');
+}
+try { applyTheme(localStorage.getItem('theme')); } catch (e) {}
+document.getElementById('themeBtn').onclick = () => {
+  const dark = isDark();
+  const t = dark ? 'light' : 'dark';
+  applyTheme(t);
+  try { localStorage.setItem('theme', t); } catch (e) {}
+  render();
+};
+function isDark() {
+  const a = document.documentElement.getAttribute('data-theme');
+  if (a) return a === 'dark';
+  return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function series(i) { return css('--s' + ((i % 8) + 1)); }
+function alpha(hex, a) {
+  const h = hex.replace('#', ''); const n = parseInt(h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+// ---------- load ----------
+google.script.run
+  .withSuccessHandler(s => { D = JSON.parse(s); init(); })
+  .withFailureHandler(e => { document.getElementById('loading').innerHTML = '<i class="ico" data-i="alert"></i> โหลดข้อมูลไม่สำเร็จ: ' + e.message; })
+  .getDashboardData();
+
+function init() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = '';
+  document.getElementById('facultyName').textContent = D.faculty;
+  document.getElementById('updated').innerHTML = ICON('history') + ' ข้อมูล ณ ' + D.updated;
+  document.getElementById('thresholdNote').innerHTML =
+    `<span class="legend-pill"><span class="dot" style="background:var(--critical)"></span>ต่ำกว่าเกณฑ์ GPAX &lt; ${D.threshold.toFixed(2)}</span>` +
+    `<span class="legend-pill"><span class="dot" style="background:var(--serious)"></span>เฝ้าระวัง ${D.threshold.toFixed(2)}–${(D.watch - 0.01).toFixed(2)}</span>`;
+  // เรียงหลักสูตรตามลำดับคงที่ (สีตามหลักสูตรไม่เปลี่ยนเมื่อกรอง)
+  D.progOrder = D.programs.map((p, i) => i).sort((a, b) => rank(D.programs[a]) - rank(D.programs[b]));
+  const fp = document.getElementById('fProgram');
+  D.progOrder.forEach(i => fp.add(new Option(D.programs[i], i)));
+  const fy = document.getElementById('fYear');
+  [...new Set(D.students.map(s => s.y))].filter(Boolean).sort().forEach(y => fy.add(new Option('ชั้นปี ' + y, y)));
+  const fv = document.getElementById('fProv'), fvw = document.getElementById('fProvWrap');
+  (D.provinces || []).forEach((v, i) => fv.add(new Option(v, i)));
+  D.primIdx = D.programs.indexOf(D.primary);
+  fp.onchange = () => { state.program = fp.value; const on = fp.value !== '' && Number(fp.value) === D.primIdx; fvw.style.display = on ? '' : 'none'; if (!on) { fv.value = ''; state.prov = ''; } render(); };
+  fv.onchange = () => { state.prov = fv.value; render(); };
+  fy.onchange = () => { state.year = fy.value; render(); };
+  document.getElementById('btnReset').onclick = () => { fp.value = ''; fy.value = ''; fv.value = ''; fvw.style.display = 'none'; state.program = ''; state.year = ''; state.prov = ''; render(); };
+  // ภาคการศึกษา: ค่าเริ่มต้น = ภาคล่าสุดที่มีผลการเรียนอย่างน้อยครึ่งหนึ่งของภาคที่มีมากที่สุด
+  const tc = D.terms.map((_, ti) => D.students.filter(s => s.g.some(x => x[0] === ti)).length), mx = Math.max(0, ...tc);
+  // ค่าเริ่มต้น = ภาคปัจจุบันที่ผู้ดูแลอัปเดตข้อมูลนักศึกษา · ถ้ายังไม่ได้ตั้ง ใช้ภาคล่าสุดที่มีผลการเรียนเพียงพอ
+  const ci = D.curTerm ? (D.termKeys || []).indexOf(D.curTerm) : -1;
+  if (ci >= 0) state.cut = ci; else { state.cut = D.terms.length - 1; while (state.cut > 0 && tc[state.cut] < mx * 0.5) state.cut--; }
+  state.tc = tc;
+  const ft = document.getElementById('fTerm');
+  D.terms.map((t, i) => i).reverse().forEach(i => ft.add(new Option(D.terms[i] + (i === ci ? ' (ปัจจุบัน)' : tc[i] ? '' : ' (ยังไม่มีผลการเรียน)'), i)));
+  if (!D.terms.length) ft.add(new Option('ยังไม่มีผลการเรียน', -1));
+  ft.value = state.cut;
+  ft.onchange = () => { state.cut = Number(ft.value); render(); };
+  seg('segMetric', 'metric'); seg('segGroup', 'group');
+  if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  render();
+}
+function rank(p) { const i = PROGRAM_ORDER.indexOf(p); return i < 0 ? 99 : i; }
+function progColor(pi) { return series(D.progOrder.indexOf(pi)); }
+function seg(id, key) {
+  document.querySelectorAll('#' + id + ' button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('#' + id + ' button').forEach(x => x.classList.toggle('on', x === b));
+    state[key] = b.dataset.v; renderTrend();
+  });
+}
+
+// ---------- helpers ----------
+function filtered() {
+  return D.students.filter(s =>
+    (state.program === '' || s.p === Number(state.program)) &&
+    (state.year === '' || s.y === Number(state.year)) &&
+    (!state.prov || s.v === Number(state.prov)));
+}
+/** GPAX ณ ภาคที่เลือก (ล่าสุดที่ไม่เกินภาคนั้น) · cut = ดัชนีภาค */
+function gpaxAt(s, cut) { for (let i = s.g.length - 1; i >= 0; i--) if (s.g[i][0] <= cut && s.g[i][2] != null) return s.g[i][2]; return null; }
+/** ดัชนีภาคล่าสุด (ไม่เกิน cut) ที่มีผลการเรียนจริง — ใช้เมื่อภาคปัจจุบันของข้อมูลนักศึกษายังไม่มีเกรด */
+function gradeIdx(cut) { const t = state.tc || []; let i = Math.min(cut, t.length - 1); while (i > 0 && !t[i]) i--; return i; }
+function latest(s) { return gpaxAt(s, state.cut < 0 ? 1e9 : state.cut); }
+function level(g) { return g < D.threshold ? 'crit' : g < D.watch ? 'watch' : 'ok'; }
+const ACTIVE = 'กำลังศึกษา';
+const fmt = n => n.toLocaleString('th-TH');
+const pct = (a, b) => b ? (a / b * 100) : 0;
+
+function baseOpts(extra) {
+  const t2 = css('--text-2'), grid = css('--grid');
+  Chart.defaults.font.family = "'Sarabun', system-ui, sans-serif";
+  Chart.defaults.font.size = 13;
+  Chart.defaults.color = t2;
+  return Object.assign({
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'rectRounded', color: t2, padding: 14 } },
+      tooltip: { backgroundColor: css('--surface'), titleColor: css('--text'), bodyColor: css('--text-2'), borderColor: css('--border'), borderWidth: 1, padding: 10, boxPadding: 4, usePointStyle: true }
+    },
+    scales: {
+      x: { grid: { display: false }, border: { color: grid }, ticks: { color: t2 } },
+      y: { grid: { color: grid }, border: { display: false }, ticks: { color: t2 }, beginAtZero: true }
+    }
+  }, extra || {});
+}
+function draw(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  const box = document.getElementById(id).parentElement;
+  box.querySelectorAll('.empty').forEach(e => e.remove());
+  document.getElementById(id).style.display = '';
+  charts[id] = new Chart(document.getElementById(id), cfg);
+}
+function empty(id, msg) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+  const cv = document.getElementById(id); cv.style.display = 'none';
+  const box = cv.parentElement; box.querySelectorAll('.empty').forEach(e => e.remove());
+  const d = document.createElement('div'); d.className = 'empty';
+  d.innerHTML = msg || '<div>ยังไม่มีข้อมูลผลการเรียน</div><div style="font-size:12px">ผู้ดูแลระบบนำเข้าได้ที่เมนู “ผลการเรียน”</div>';
+  box.appendChild(d);
+}
+
+// ---------- render ----------
+function render() {
+  if (!D) return;
+  const S = filtered();
+  renderKpis(S); renderYear(S); renderStatus(S); renderPrim(); renderRadarGpa(S); renderRadarRisk(S);
+  renderTrend(); renderRound(S); renderRoundTrend(S); renderHist(S); renderMajor(S); renderResign(S); renderTable(S);
+  renderF(S); renderCohort(); renderSex(S); renderOverdue(S);
+  const tc = document.getElementById('termChip');
+  if (state.cut >= 0 && D.terms[state.cut]) { const gi = gradeIdx(state.cut); tc.style.display = ''; tc.innerHTML = ICON('calendar') + ' ข้อมูล ณ ภาค ' + D.terms[state.cut] + (gi !== state.cut && D.terms[gi] ? ' · ผลการเรียนล่าสุด ภาค ' + D.terms[gi] : ''); }
+}
+
+function renderKpis(S) {
+  const act = S.filter(s => s.s === ACTIVE);
+  const g = act.map(latest).filter(v => v != null);
+  const crit = g.filter(v => v < D.threshold).length, watch = g.filter(v => v >= D.threshold && v < D.watch).length;
+  const avg = g.length ? g.reduce((a, b) => a + b, 0) / g.length : null;
+  const cnt = st => S.filter(s => s.s === st).length;
+  const out = S.length - act.length - cnt('ลาพัก');
+  // เทียบภาคก่อนหน้า (นักศึกษากลุ่มเดียวกัน)
+  const pc = state.cut < 0 ? -1 : gradeIdx(gradeIdx(state.cut) - 1) < gradeIdx(state.cut) ? gradeIdx(gradeIdx(state.cut) - 1) : -1, gp = pc >= 0 ? act.map(s => gpaxAt(s, pc)).filter(v => v != null) : [];
+  const pCrit = gp.filter(v => v < D.threshold).length, pAvg = gp.length ? gp.reduce((a, b) => a + b, 0) / gp.length : null;
+  const dl = (a, b, inv, dec, unit) => { if (b == null || a == null) return ''; const d = a - b; if (Math.abs(d) < (dec ? 0.005 : 0.5)) return `<span class="kd flat">● เท่าเดิม</span>`; const good = inv ? d < 0 : d > 0; return `<span class="kd ${good ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'} ${dec ? Math.abs(d).toFixed(2) : Math.abs(d)}${unit || ''}</span>`; };
+  const prevLbl = pc >= 0 && D.terms[pc] ? ' จากภาค ' + D.terms[pc] : '';
+  const I = {
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.5-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .7 3.2 2.5 3.5 5.2"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/></svg>',
+    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/></svg>'
+  };
+  const k = [
+    ['นักศึกษาทั้งหมด', fmt(S.length), 'ทุกสถานะ', I.users, 'hl'],
+    ['กำลังศึกษา', fmt(act.length), pct(act.length, S.length).toFixed(1) + '% ของทั้งหมด', I.book, ''],
+    ['ลาพัก', fmt(cnt('ลาพัก')), 'รักษาสภาพ/ลาพักการศึกษา', I.pause, ''],
+    ['ลาออก / อื่นๆ', fmt(out), 'ลาออก พ้นสภาพ ย้ายคณะ ฯลฯ', I.out, ''],
+    ['GPAX เฉลี่ย', avg == null ? '–' : avg.toFixed(2), g.length ? (gp.length ? '<span>' + dl(avg, pAvg, false, true) + prevLbl + '</span>' : 'จาก ' + fmt(g.length) + ' คนที่มีผลการเรียน') : 'ยังไม่มีผลการเรียน', I.chart, ''],
+    ['ต่ำกว่าเกณฑ์', g.length ? fmt(crit) : '–',
+      g.length ? `<span>${pct(crit, g.length).toFixed(1)}% · ${gp.length ? dl(crit, pCrit, true, false, ' คน') + prevLbl : 'เฝ้าระวัง ' + fmt(watch) + ' คน'}</span>` : 'GPAX < ' + D.threshold.toFixed(2), I.alert, 'alert']
+  ];
+  document.getElementById('kpis').innerHTML = k.map(x =>
+    `<div class="card kpi ${x[4]}"><div class="k-top"><div class="k-label">${x[0]}</div><div class="k-ico">${x[3]}</div></div><div class="k-val">${x[1]}</div><div class="k-foot">${x[2]}</div></div>`).join('');
+}
+
+function yearsOf(S) { return [...new Set(S.map(s => s.y))].filter(Boolean).sort((a, b) => a - b); }
+function progsOf(S) { return D.progOrder.filter(pi => S.some(s => s.p === pi)); }
+
+function renderYear(S) {
+  const act = S.filter(s => s.s === ACTIVE);
+  const ys = yearsOf(act), ps = progsOf(act);
+  if (!act.length) return empty('chYear', 'ไม่มีข้อมูลตามตัวกรอง');
+  const surf = css('--surface');
+  draw('chYear', {
+    type: 'bar',
+    data: {
+      labels: ys.map(y => 'ปี ' + y),
+      datasets: ps.map(pi => ({
+        label: D.programs[pi], data: ys.map(y => act.filter(s => s.y === y && s.p === pi).length),
+        backgroundColor: progColor(pi), borderColor: surf, borderWidth: { top: 2 }, borderRadius: 3, borderSkipped: 'bottom', maxBarThickness: 56
+      }))
+    },
+    options: baseOpts({ scales: Object.assign(baseOpts().scales, { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: { color: css('--grid') }, border: { display: false }, title: { display: true, text: 'จำนวน (คน)' } } }) })
+  });
+}
+
+function renderStatus(S) {
+  const map = {}; S.forEach(s => map[s.s] = (map[s.s] || 0) + 1);
+  const order = ['กำลังศึกษา', 'ลาพัก', 'ลาออก', 'พ้นสภาพ', 'สำเร็จการศึกษา', 'ย้ายคณะ'];
+  const keys = Object.keys(map).sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
+  if (!keys.length) return empty('chStatus', 'ไม่มีข้อมูล');
+  draw('chStatus', {
+    type: 'doughnut',
+    data: { labels: keys, datasets: [{ data: keys.map(k => map[k]), backgroundColor: keys.map(k => series(Math.max(0, order.indexOf(k)) )), borderColor: css('--surface'), borderWidth: 2 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, color: css('--text-2'),
+          generateLabels: ch => ch.data.labels.map((l, i) => ({ text: `${l} ${fmt(map[l])} (${pct(map[l], S.length).toFixed(1)}%)`, fillStyle: ch.data.datasets[0].backgroundColor[i], strokeStyle: 'transparent', pointStyle: 'rectRounded', fontColor: css('--text-2'), index: i })) } },
+        tooltip: baseOpts().plugins.tooltip
+      }
+    }
+  });
+}
+
+function radarScale(min, max, step, suffix) {
+  return {
+    r: {
+      min, max, ticks: { stepSize: step, backdropColor: 'transparent', color: css('--muted'), callback: v => v + (suffix || '') },
+      grid: { color: css('--grid') }, angleLines: { color: css('--grid') },
+      pointLabels: { color: css('--text-2'), font: { size: 13, weight: '600' } }
+    }
+  };
+}
+
+function renderRadarGpa(S) {
+  const act = S.filter(s => s.s === ACTIVE && latest(s) != null);
+  const ys = [...new Set(D.students.map(s => s.y))].filter(Boolean).sort();
+  const ps = progsOf(act);
+  if (!act.length) return empty('chRadarGpa');
+  const ds = ps.map(pi => {
+    const c = progColor(pi);
+    return {
+      label: D.programs[pi],
+      data: ys.map(y => { const g = act.filter(s => s.p === pi && s.y === y).map(latest); return g.length ? +(g.reduce((a, b) => a + b, 0) / g.length).toFixed(2) : null; }),
+      borderColor: c, backgroundColor: alpha(c, 0.12), borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: c, pointBorderColor: css('--surface'), spanGaps: true
+    };
+  });
+  const all = ds.flatMap(d => d.data).filter(v => v != null);
+  const lo = Math.max(0, Math.floor((Math.min(...all, D.threshold) - 0.25) * 2) / 2);
+  draw('chRadarGpa', {
+    type: 'radar',
+    data: { labels: ys.map(y => 'ชั้นปี ' + y), datasets: ds },
+    options: { responsive: true, maintainAspectRatio: false, scales: radarScale(lo, 4, 0.5),
+      plugins: { legend: baseOpts().plugins.legend, tooltip: Object.assign({}, baseOpts().plugins.tooltip, { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw == null ? '–' : c.raw.toFixed(2)}` } }) } }
+  });
+}
+
+function renderRadarRisk(S) {
+  const act = S.filter(s => s.s === ACTIVE && latest(s) != null);
+  if (!act.length) return empty('chRadarRisk');
+  const ys = [...new Set(D.students.map(s => s.y))].filter(Boolean).sort();
+  const lv = [
+    ['crit', `ต่ำกว่าเกณฑ์ (< ${D.threshold.toFixed(2)})`, css('--critical')],
+    ['watch', `เฝ้าระวัง (${D.threshold.toFixed(2)}–${(D.watch - 0.01).toFixed(2)})`, css('--serious')],
+  ];
+  const ds = lv.map(([k, label, c]) => ({
+    label,
+    data: ys.map(y => { const g = act.filter(s => s.y === y).map(latest); return g.length ? +pct(g.filter(v => level(v) === k).length, g.length).toFixed(1) : 0; }),
+    borderColor: c, backgroundColor: alpha(c, 0.15), borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: c, pointBorderColor: css('--surface'),
+    pointStyle: k === 'crit' ? 'triangle' : 'circle'
+  }));
+  const mx = Math.max(10, ...ds.flatMap(d => d.data));
+  const top = Math.ceil(mx / 5) * 5;
+  draw('chRadarRisk', {
+    type: 'radar',
+    data: { labels: ys.map(y => 'ชั้นปี ' + y), datasets: ds },
+    options: { responsive: true, maintainAspectRatio: false, scales: radarScale(0, top, top / 5, '%'),
+      plugins: { legend: Object.assign({}, baseOpts().plugins.legend, { labels: Object.assign({}, baseOpts().plugins.legend.labels, { usePointStyle: true, pointStyle: undefined }) }),
+        tooltip: Object.assign({}, baseOpts().plugins.tooltip, { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw}%` } }) } }
+  });
+}
+
+function renderTrend() {
+  if (!D) return;
+  const S = filtered();
+  const withG = S.filter(s => s.g.length);
+  if (!withG.length || !D.terms.length) return empty('chTrend');
+  let groups;
+  if (state.group === 'cohort') {
+    groups = [...new Set(withG.map(s => s.c))].sort().map((c, i) => ({ label: 'รหัส ' + c, test: s => s.c === c, color: series(i), dash: [] }));
+  } else if (state.group === 'program') {
+    groups = progsOf(withG).map(pi => ({ label: D.programs[pi], test: s => s.p === pi, color: progColor(pi), dash: [] }));
+  } else {
+    groups = [{ label: 'รวมทุกกลุ่ม', test: () => true, color: series(0), dash: [] }];
+  }
+  const sub = { cohort: 'แยกตามรุ่น (รหัสนักศึกษา)', program: 'แยกตามหลักสูตร', all: 'ภาพรวมตามตัวกรอง' }[state.group];
+  const mLabel = { pct: 'ร้อยละ GPAX < ' + D.threshold.toFixed(2), n: 'จำนวนคน GPAX < ' + D.threshold.toFixed(2), avg: 'GPAX เฉลี่ย' }[state.metric];
+  document.getElementById('trendSub').textContent = sub + ' · ' + mLabel;
+
+  const TL = D.terms.slice(0, state.cut < 0 ? D.terms.length : gradeIdx(state.cut) + 1);
+  const ds = groups.map(gp => {
+    const mem = withG.filter(gp.test);
+    const data = TL.map((_, ti) => {
+      const vals = mem.map(s => { const e = s.g.find(x => x[0] === ti); return e && e[2] != null ? e[2] : null; }).filter(v => v != null);
+      if (!vals.length) return null;
+      const n = vals.filter(v => v < D.threshold).length;
+      if (state.metric === 'pct') return +pct(n, vals.length).toFixed(1);
+      if (state.metric === 'n') return n;
+      return +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
+    });
+    return { label: gp.label, data, borderColor: gp.color, backgroundColor: gp.color, borderWidth: 2, pointRadius: 3, pointHoverRadius: 6, tension: 0, spanGaps: false, pointBorderColor: css('--surface'), pointBorderWidth: 1 };
+  }).filter(d => d.data.some(v => v != null));
+
+  if (state.metric === 'avg') {
+    ds.push({ label: 'เกณฑ์ ' + D.threshold.toFixed(2), data: TL.map(() => D.threshold), borderColor: css('--critical'), borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 0, fill: false });
+  }
+  const o = baseOpts();
+  o.scales.y.title = { display: true, text: { pct: 'ร้อยละ (%)', n: 'จำนวน (คน)', avg: 'GPAX' }[state.metric] };
+  if (state.metric === 'avg') { o.scales.y.beginAtZero = false; o.scales.y.suggestedMin = Math.max(0, D.threshold - 0.5); o.scales.y.max = 4; }
+  if (state.metric === 'pct') o.scales.y.ticks.callback = v => v + '%';
+  o.plugins.tooltip.callbacks = { title: i => 'ภาค ' + i[0].label, label: c => ` ${c.dataset.label}: ${c.raw == null ? '–' : state.metric === 'pct' ? c.raw + '%' : state.metric === 'avg' ? c.raw.toFixed(2) : c.raw + ' คน'}` };
+  draw('chTrend', { type: 'line', data: { labels: TL, datasets: ds }, options: o });
+}
+
+function renderHist(S) {
+  const g = S.filter(s => s.s === ACTIVE).map(latest).filter(v => v != null);
+  if (!g.length) return empty('chHist');
+  const t = D.threshold, w = D.watch;
+  const bins = [
+    ['< ' + t.toFixed(2), v => v < t, '--critical'],
+    [t.toFixed(2) + '–' + (w - 0.01).toFixed(2), v => v >= t && v < w, '--serious'],
+    [w.toFixed(2) + '–2.99', v => v >= w && v < 3, '--seq-1'],
+    ['3.00–3.49', v => v >= 3 && v < 3.5, '--seq-2'],
+    ['3.50–4.00', v => v >= 3.5, '--seq-3']
+  ];
+  const data = bins.map(b => g.filter(b[1]).length);
+  const o = baseOpts(); o.plugins.legend = { display: false };
+  o.scales.y.title = { display: true, text: 'จำนวน (คน)' };
+  o.plugins.tooltip.callbacks = { label: c => ` ${c.raw} คน (${pct(c.raw, g.length).toFixed(1)}%)` };
+  draw('chHist', {
+    type: 'bar',
+    data: { labels: bins.map(b => b[0]), datasets: [{ label: 'จำนวน', data, backgroundColor: bins.map(b => css(b[2])), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 64 }] },
+    options: o
+  });
+}
+
+function renderMajor(S) {
+  const act = S.filter(s => s.s === ACTIVE && s.m >= 0 && s.y >= 5);
+  if (!act.length) return empty('chMajor', 'ไม่มีนักศึกษาชั้นปี 5–6 ตามตัวกรอง');
+  const ms = [...new Set(act.map(s => s.m))].sort((a, b) => act.filter(s => s.m === b).length - act.filter(s => s.m === a).length);
+  const ys = yearsOf(act);
+  const o = baseOpts({ indexAxis: 'y', interaction: { mode: 'index', intersect: false, axis: 'y' } });
+  o.scales = { x: { stacked: true, grid: { color: css('--grid') }, border: { display: false }, title: { display: true, text: 'จำนวน (คน)' } }, y: { stacked: true, grid: { display: false }, ticks: { color: css('--text-2') } } };
+  draw('chMajor', {
+    type: 'bar',
+    data: { labels: ms.map(m => D.majors[m]), datasets: ys.map((y, i) => ({ label: 'ชั้นปี ' + y, data: ms.map(m => act.filter(s => s.m === m && s.y === y).length), backgroundColor: series(i + 6), borderColor: css('--surface'), borderWidth: { right: 2 }, borderRadius: 3, borderSkipped: 'left', maxBarThickness: 26 })) },
+    options: o
+  });
+}
+
+function renderResign(S) {
+  const map = {};
+  S.forEach(s => { if (s.r) map[s.r] = (map[s.r] || 0) + 1; });
+  const keys = Object.keys(map).sort((a, b) => { const [ta, ya] = a.split('/').map(Number), [tb, yb] = b.split('/').map(Number); return ya - yb || ta - tb; });
+  if (!keys.length) return empty('chResign', 'ไม่มีข้อมูลการลาออกตามตัวกรอง');
+  const o = baseOpts(); o.plugins.legend = { display: false };
+  o.scales.y.title = { display: true, text: 'จำนวน (คน)' }; o.scales.y.ticks.precision = 0;
+  o.plugins.tooltip.callbacks = { title: i => 'ภาค ' + i[0].label, label: c => ` ลาออก ${c.raw} คน` };
+  draw('chResign', { type: 'bar', data: { labels: keys, datasets: [{ label: 'ลาออก', data: keys.map(k => map[k]), backgroundColor: series(0), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 36 }] }, options: o });
+}
+
+function renderTable(S) {
+  const act = S.filter(s => s.s === ACTIVE);
+  const ys = yearsOf(act);
+  const row = (label, arr, bold) => {
+    const g = arr.map(latest).filter(v => v != null);
+    const crit = g.filter(v => v < D.threshold).length, watch = g.filter(v => v >= D.threshold && v < D.watch).length;
+    const avg = g.length ? (g.reduce((a, b) => a + b, 0) / g.length).toFixed(2) : '–';
+    const b = bold ? ' style="font-weight:700"' : '';
+    return `<tr${b}><td>${label}</td><td class="num">${fmt(arr.length)}</td><td class="num">${fmt(arr.filter(s => s.x === 1).length)}</td><td class="num">${fmt(arr.filter(s => s.x === 2).length)}</td><td class="num">${fmt(g.length)}</td><td class="num">${avg}</td>
+      <td class="num"><span class="risk-cell">${crit ? '<span class="dot" style="background:var(--critical)"></span>' : ''}${g.length ? fmt(crit) + ' (' + pct(crit, g.length).toFixed(1) + '%)' : '–'}</span></td>
+      <td class="num"><span class="risk-cell">${watch ? '<span class="dot" style="background:var(--serious)"></span>' : ''}${g.length ? fmt(watch) : '–'}</span></td></tr>`;
+  };
+  document.getElementById('tblRisk').innerHTML =
+    `<thead><tr><th>ชั้นปี</th><th class="num">กำลังศึกษา</th><th class="num">ชาย</th><th class="num">หญิง</th><th class="num">มีผลการเรียน</th><th class="num">GPAX เฉลี่ย</th><th class="num">ต่ำกว่าเกณฑ์</th><th class="num">เฝ้าระวัง</th></tr></thead><tbody>` +
+    ys.map(y => row('ชั้นปี ' + y, act.filter(s => s.y === y))).join('') + row('รวม', act, true) + '</tbody>';
+}
+
+function slopeOf(s) {
+  const ys = s.g.map(x => x[1]).filter(v => v != null); const n = ys.length; if (n < 2) return null;
+  let sx = 0, sy = 0, sxy = 0, sxx = 0; ys.forEach((y, x) => { sx += x; sy += y; sxy += x * y; sxx += x * x; });
+  const d = n * sxx - sx * sx; return d ? (n * sxy - sx * sy) / d : null;
+}
+function trendCls(s) { const k = slopeOf(s); return k == null ? null : k > 0.05 ? 'up' : k < -0.05 ? 'down' : 'flat'; }
+function roundsOf(S) { return (D.rounds || []).map((r, i) => i).filter(i => S.some(s => s.a === i)).sort((a, b) => D.rounds[a].localeCompare(D.rounds[b], 'th')); }
+function renderRound(S) {
+  const act = S.filter(s => s.s === ACTIVE && s.a >= 0);
+  const rs = roundsOf(act);
+  if (!rs.length) return empty('chRound', '<div>ยังไม่มีข้อมูลรอบการรับเข้า</div><div style="font-size:12px">เพิ่มคอลัมน์ “รอบการรับเข้า” และ “GPAX มัธยมปลาย” ที่หน้าผู้ดูแลระบบ</div>');
+  const avg = a => a.length ? +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(2) : null;
+  const o = baseOpts(); o.scales.y.min = 0; o.scales.y.max = 4; o.scales.y.title = { display: true, text: 'เกรดเฉลี่ย' };
+  o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label}: ${c.raw == null ? '–' : c.raw.toFixed(2)} (${c.dataset._n[c.dataIndex]} คน)` };
+  const mk = (label, fn, color) => { const vals = rs.map(r => act.filter(s => s.a === r).map(fn).filter(v => v != null)); return { label, data: vals.map(avg), _n: vals.map(v => v.length), backgroundColor: color, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 40 }; };
+  draw('chRound', { type: 'bar', data: { labels: rs.map(r => D.rounds[r]), datasets: [mk('GPAX ม.ปลาย (แรกเข้า)', s => s.h, css('--s2')), mk('GPAX ปัจจุบัน', latest, css('--s1'))] }, options: o });
+}
+function renderRoundTrend(S) {
+  const act = S.filter(s => s.s === ACTIVE && s.a >= 0 && trendCls(s));
+  const rs = roundsOf(act);
+  if (!rs.length) return empty('chRoundTrend', '<div>ยังไม่มีข้อมูลเพียงพอ</div><div style="font-size:12px">ต้องมีรอบการรับเข้า และผลการเรียนอย่างน้อย 2 ภาค</div>');
+  const cats = [['up', '▲ ดีขึ้น', css('--s2')], ['flat', '● คงที่', isDark() ? '#6b625b' : '#c9c1b9'], ['down', '▼ ลดลง', css('--s8')]];
+  const o = baseOpts({ indexAxis: 'y', interaction: { mode: 'index', intersect: false, axis: 'y' } });
+  o.scales = { x: { stacked: true, max: 100, grid: { color: css('--grid') }, border: { display: false }, ticks: { callback: v => v + '%' } }, y: { stacked: true, grid: { display: false } } };
+  o.plugins.tooltip.callbacks = { label: c => ` ${c.dataset.label}: ${c.raw.toFixed(1)}% (${c.dataset._n[c.dataIndex]} คน)` };
+  draw('chRoundTrend', { type: 'bar', data: { labels: rs.map(r => D.rounds[r]), datasets: cats.map(([k, l, col]) => {
+    const n = rs.map(r => act.filter(s => s.a === r && trendCls(s) === k).length), t = rs.map(r => act.filter(s => s.a === r).length);
+    return { label: l, data: n.map((x, i) => pct(x, t[i])), _n: n, backgroundColor: col, borderColor: css('--surface'), borderWidth: { right: 2 }, maxBarThickness: 30 };
+  }) }, options: o });
+}
+
+// ---------- ส่งออก (ข้อมูลเชิงสถิติ ไม่มีข้อมูลรายบุคคล) ----------
+function toast(m, ms) { if (window.UX && UX.toast) return UX.toast(m, ms); const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), ms || 3000); }
+async function summaryTable() {
+  const S = filtered();
+  const ys = [...new Set(S.map(s => s.y))].filter(Boolean).sort((a, b) => a - b), ps = progsOf(S);
+  const line = (y, p, L) => {
+    const act = L.filter(s => s.s === ACTIVE), g = act.map(latest).filter(v => v != null);
+    const out = L.length - act.length - L.filter(s => s.s === 'ลาพัก').length;
+    const tr = act.map(trendCls).filter(Boolean);
+    return [y, p, L.length, act.length, act.filter(s => s.x === 1).length, act.filter(s => s.x === 2).length, L.filter(s => s.s === 'ลาพัก').length, out, L.filter(s => s.o === 1).length, g.length, g.length ? (g.reduce((a, b) => a + b, 0) / g.length).toFixed(2) : '–',
+      g.filter(v => v < D.threshold).length, g.filter(v => v >= D.threshold && v < D.watch).length, tr.filter(t => t === 'up').length, tr.filter(t => t === 'down').length];
+  };
+  const rows = [];
+  ys.forEach(y => { ps.forEach(pi => { const L = S.filter(s => s.y === y && s.p === pi); if (L.length) rows.push(line('ปี ' + y, D.programs[pi], L)); }); rows.push(line('ปี ' + y, 'รวมชั้นปี', S.filter(s => s.y === y))); });
+  if (D.primIdx >= 0) (D.provinces || []).forEach((v, k) => { const L = S.filter(s => s.p === D.primIdx && s.v === k); if (L.length) rows.push(line('ปฐมภูมิ', 'จ.' + v, L)); });
+  rows.push(line('ทั้งหมด', 'รวม', S));
+  const f = [$('fProgram').value !== '' ? $('fProgram').selectedOptions[0].text : '', $('fYear').value ? $('fYear').selectedOptions[0].text : ''].filter(Boolean).join(' · ');
+  return { title: 'สรุปจำนวนนักศึกษาและผลการเรียน ระดับปริญญาตรี', sub: (f ? 'ตัวกรอง: ' + f + ' · ' : '') + `ต่ำกว่าเกณฑ์ GPAX < ${D.threshold.toFixed(2)} · เฝ้าระวัง < ${D.watch.toFixed(2)} · ข้อมูล ณ ${D.updated}`,
+    file: 'สรุปนักศึกษา_เภสัชฯมข', sheet: 'สรุป',
+    headers: ['ชั้นปี', 'หลักสูตร', 'ทั้งหมด', 'กำลังศึกษา', 'ชาย (กำลังศึกษา)', 'หญิง (กำลังศึกษา)', 'ลาพัก', 'ลาออก/อื่นๆ', 'ตกค้าง (เปอร์)', 'มีผลการเรียน', 'GPAX เฉลี่ย', 'ต่ำกว่าเกณฑ์', 'เฝ้าระวัง', 'แนวโน้มดีขึ้น', 'แนวโน้มลดลง'], rows,
+    note: 'ข้อมูลเชิงสถิติ ไม่มีข้อมูลระบุตัวบุคคล · แนวโน้มคำนวณจาก GPA รายภาค (≥ 2 ภาค)' };
+}
+async function dashPdf() {
+  document.querySelectorAll('.filters').forEach(e => e.setAttribute('data-html2canvas-ignore', ''));
+  await XP.pdfFromElement(document.getElementById('content'), 'Dashboard_นักศึกษา_เภสัชฯมข');
+}
+
+// ---------- ชาย–หญิง ----------
+const SEX_C = () => ({ m: css('--s2'), f: css('--s4') });
+function renderSex(S) {
+  const act = S.filter(s => s.s === ACTIVE), ys = yearsOf(act), C = SEX_C();
+  const m = act.filter(s => s.x === 1).length, f = act.filter(s => s.x === 2).length, u = act.length - m - f;
+  document.getElementById('sexSum').innerHTML = `<span class="sx"><span class="sw" style="background:${C.m}"></span>ชาย <b>${fmt(m)}</b> ${act.length ? pct(m, act.length).toFixed(1) + '%' : ''}</span>` +
+    `<span class="sx"><span class="sw" style="background:${C.f}"></span>หญิง <b>${fmt(f)}</b> ${act.length ? pct(f, act.length).toFixed(1) + '%' : ''}</span>` +
+    (u ? `<span class="sx">ไม่ระบุ <b>${fmt(u)}</b></span>` : '') + (m && f ? `<span class="sx">สัดส่วน ชาย : หญิง <b>1 : ${(f / m).toFixed(2)}</b></span>` : '');
+  if (!act.length) return empty('chSex', 'ไม่มีข้อมูลตามตัวกรอง');
+  const by = (y, x) => act.filter(s => s.y === y && s.x === x).length;
+  const ds = [{ label: 'ชาย', data: ys.map(y => by(y, 1)), backgroundColor: C.m, borderRadius: 5, maxBarThickness: 34 }, { label: 'หญิง', data: ys.map(y => by(y, 2)), backgroundColor: C.f, borderRadius: 5, maxBarThickness: 34 }];
+  if (u) ds.push({ label: 'ไม่ระบุ', data: ys.map(y => by(y, 0)), backgroundColor: css('--muted'), borderRadius: 5, maxBarThickness: 34 });
+  const o = baseOpts();
+  o.scales.y.title = { display: true, text: 'จำนวน (คน)' };
+  o.plugins.tooltip.callbacks = { label: c => { const t = act.filter(s => s.y === ys[c.dataIndex]).length; return ` ${c.dataset.label}: ${fmt(c.raw)} คน (${pct(c.raw, t).toFixed(1)}%)`; }, footer: i => 'รวม ' + fmt(act.filter(s => s.y === ys[i[0].dataIndex]).length) + ' คน' };
+  draw('chSex', { type: 'bar', data: { labels: ys.map(y => 'ชั้นปี ' + y), datasets: ds }, options: o });
+}
+// ---------- ตกค้าง (เปอร์) ----------
+function renderOverdue(S) {
+  const L = S.filter(s => s.o), od = L.filter(s => s.o === 1), nd = L.filter(s => s.o === 2), ok = L.filter(s => s.o === 3);
+  document.getElementById('odKpi').innerHTML = `<div class="m"><div class="l">ตกค้าง (ยังไม่ผ่านเกณฑ์จบ)</div><div class="v" style="color:var(--critical)">${fmt(od.length)}</div></div>` +
+    `<div class="m"><div class="l">ยังไม่มีไฟล์ตรวจสอบจบ</div><div class="v">${fmt(nd.length)}</div></div>` +
+    `<div class="m"><div class="l">ผ่านเกณฑ์แล้ว รอสำเร็จฯ</div><div class="v" style="color:var(--good)">${fmt(ok.length)}</div></div>`;
+  if (!L.length) return empty('chOd', 'ไม่มีนักศึกษาชั้นปี 6 ขึ้นไปตามตัวกรอง');
+  const ns = [...new Set(L.map(s => Math.min(Math.max(s.n || 6, 6), 9)))].sort((a, b) => a - b);
+  const lab = n => n >= 9 ? 'ปีที่ 9+' : 'ปีที่ ' + n;
+  const cnt = (n, o) => L.filter(s => Math.min(Math.max(s.n || 6, 6), 9) === n && s.o === o).length;
+  const o = baseOpts({ indexAxis: 'y' });
+  o.scales.x = Object.assign(o.scales.x, { stacked: true, grid: { color: css('--grid') }, ticks: { precision: 0, color: css('--text-2') } });
+  o.scales.y = Object.assign(o.scales.y, { stacked: true, grid: { display: false } });
+  o.plugins.tooltip.callbacks = { title: i => 'ศึกษา' + i[0].label + ' (นับจากรหัสนักศึกษา)', label: c => ` ${c.dataset.label}: ${c.raw} คน` };
+  draw('chOd', { type: 'bar', data: { labels: ns.map(lab), datasets: [
+    { label: 'ตกค้าง', data: ns.map(n => cnt(n, 1)), backgroundColor: css('--critical'), maxBarThickness: 26 },
+    { label: 'ไม่มีไฟล์ตรวจสอบจบ', data: ns.map(n => cnt(n, 2)), backgroundColor: css('--muted'), maxBarThickness: 26 },
+    { label: 'ผ่านเกณฑ์แล้ว', data: ns.map(n => cnt(n, 3)), backgroundColor: css('--good'), maxBarThickness: 26 }
+  ].filter(d => d.data.some(v => v)) }, options: o });
+}
+
+// ---------- สถิติ F ----------
+function renderF(S) {
+  const act = S.filter(s => s.s === ACTIVE && s.f), ys = yearsOf(act);
+  document.getElementById('fSub').textContent = act.length ? `ร้อยละของนักศึกษากำลังศึกษาที่มีไฟล์ตรวจสอบจบในระบบ (${fmt(act.length)} คน)` : 'ยังไม่มีไฟล์ตรวจสอบจบในระบบ';
+  if (!act.length) { empty('chF', '<div>ยังไม่มีข้อมูลรายวิชา</div><div style="font-size:12px">ผู้ดูแลระบบนำเข้าไฟล์ตรวจสอบจบ (REG) เพื่อแสดงสถิติ F</div>'); document.getElementById('tblF').innerHTML = ''; return; }
+  const by = y => act.filter(s => s.y === y);
+  draw('chF', { type: 'bar', data: { labels: ys.map(y => 'ปี ' + y), datasets: [
+    { label: 'เคยติด F', data: ys.map(y => +pct(by(y).filter(s => s.f[1] > 0).length, by(y).length).toFixed(1)), backgroundColor: alpha(css('--serious'), .75), borderRadius: 5, maxBarThickness: 34 },
+    { label: 'ยังค้าง F', data: ys.map(y => +pct(by(y).filter(s => s.f[0] > 0).length, by(y).length).toFixed(1)), backgroundColor: css('--critical'), borderRadius: 5, maxBarThickness: 34 }
+  ] }, options: Object.assign(baseOpts(), { plugins: Object.assign(baseOpts().plugins, { tooltip: Object.assign(baseOpts().plugins.tooltip, { callbacks: { label: c => { const L = by(ys[c.dataIndex]); const n = L.filter(s => c.datasetIndex ? s.f[0] > 0 : s.f[1] > 0).length; return ` ${c.dataset.label}: ${c.raw}% (${n}/${L.length} คน)`; } } }) }),
+    scales: Object.assign(baseOpts().scales, { y: Object.assign(baseOpts().scales.y, { ticks: { callback: v => v + '%', color: css('--text-2') } }) }) }) });
+  const idx = new Set(S.map(s => D.students.indexOf(s)));
+  const rows = (D.fcourses || []).map(c => [c[0], c[1], c[2].filter(i => idx.has(i)).length, c[3].filter(i => idx.has(i)).length]).filter(r => r[2]).sort((a, b) => b[2] - a[2] || b[3] - a[3]).slice(0, 10);
+  const mx = Math.max(1, ...rows.map(r => r[2]));
+  document.getElementById('tblF').innerHTML = `<thead><tr><th>#</th><th>รายวิชา</th><th class="num">เคยติด F (คน)</th><th class="num">ยังค้าง</th></tr></thead><tbody>` +
+    (rows.length ? rows.map((r, i) => `<tr><td class="muted">${i + 1}</td><td><b>${psEsc(r[0])}</b> <span class="muted" style="font-size:12.5px">${psEsc(r[1])}</span><div class="fbar"><i style="width:${Math.round(r[2] / mx * 100)}%"></i></div></td><td class="num">${r[2]}</td><td class="num">${r[3] ? `<b style="color:var(--critical)">${r[3]}</b>` : '<span class="muted">0</span>'}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="muted" style="text-align:center;padding:16px">ไม่มีนักศึกษาติด F ตามตัวกรอง</td></tr>') + '</tbody>';
+}
+// ---------- การคงอยู่รายรุ่น ----------
+function renderCohort() {
+  const S = D.students.filter(s => (state.program === '' || s.p === Number(state.program)) && (!state.prov || s.v === Number(state.prov)) && s.c);
+  const cs = [...new Set(S.map(s => s.c))].sort();
+  if (!cs.length) return empty('chCohort', 'ไม่มีข้อมูลตามตัวกรอง');
+  const G = [['กำลังศึกษา', '--good', s => s === ACTIVE], ['สำเร็จการศึกษา', '--s2', s => s === 'สำเร็จการศึกษา'], ['ลาพัก', '--warning', s => s === 'ลาพัก'],
+    ['ลาออก', '--muted', s => s === 'ลาออก'], ['พ้นสภาพ', '--critical', s => s === 'พ้นสภาพ'], ['อื่นๆ', '--s7', s => !['กำลังศึกษา', 'สำเร็จการศึกษา', 'ลาพัก', 'ลาออก', 'พ้นสภาพ'].includes(s)]];
+  const by = c => S.filter(s => s.c === c);
+  const ds = G.map(([l, col, t]) => ({ label: l, data: cs.map(c => +pct(by(c).filter(s => t(s.s)).length, by(c).length).toFixed(1)), backgroundColor: css(col), borderColor: css('--surface'), borderWidth: 1, maxBarThickness: 30 })).filter(d => d.data.some(v => v > 0));
+  const o = baseOpts({ indexAxis: 'y' });
+  o.scales.x = Object.assign(o.scales.x, { stacked: true, max: 100, ticks: { callback: v => v + '%', color: css('--text-2') }, grid: { color: css('--grid') } });
+  o.scales.y = Object.assign(o.scales.y, { stacked: true, grid: { display: false } });
+  o.plugins.tooltip.callbacks = { title: i => { const L = by(cs[i[0].dataIndex]); const keep = L.filter(s => [ACTIVE, 'สำเร็จการศึกษา', 'ลาพัก'].includes(s.s)).length; return `รุ่นรหัส ${cs[i[0].dataIndex]} · ${L.length} คน · คงอยู่/สำเร็จ ${pct(keep, L.length).toFixed(1)}%`; }, label: c => ` ${c.dataset.label}: ${c.raw}% (${by(cs[c.dataIndex]).filter(s => G.find(g => g[0] === c.dataset.label)[2](s.s)).length} คน)` };
+  draw('chCohort', { type: 'bar', data: { labels: cs.map(c => 'รหัส ' + c + ' (' + by(c).length + ')'), datasets: ds }, options: o });
+}
+
+// ---------- ปฐมภูมิ แยกจังหวัด ----------
+function renderPrim() {
+  const show = D.primIdx >= 0 && (state.program === '' || Number(state.program) === D.primIdx);
+  ['primCard', 'primCard2'].forEach(id => document.getElementById(id).style.display = show ? '' : 'none');
+  [['majorCard', 'primCard'], ['histCard', 'primCard2']].forEach(([c, _]) => { const el = document.getElementById(c); el.classList.toggle('c6', show); el.classList.toggle('c12', !show); });
+  if (!show) return;
+  const P = D.students.filter(s => s.p === D.primIdx && s.s === ACTIVE && (state.year === '' || s.y === Number(state.year)));
+  const provs = D.provinces || [];
+  const ys = [...new Set(P.map(s => s.y))].filter(Boolean).sort((a, b) => a - b);
+  if (!P.length) { empty('chPrim', 'ไม่มีนักศึกษาปฐมภูมิตามตัวกรอง'); document.getElementById('tblPrim').innerHTML = ''; return; }
+  const o = baseOpts({ indexAxis: 'y', interaction: { mode: 'index', intersect: false, axis: 'y' } });
+  o.scales = { x: { stacked: true, grid: { color: css('--grid') }, border: { display: false }, ticks: { precision: 0 }, title: { display: true, text: 'จำนวน (คน)' } }, y: { stacked: true, grid: { display: false } } };
+  const labels = provs.concat(P.some(s => s.v < 0) ? ['ไม่ระบุจังหวัด'] : []);
+  const idxOf = s => s.v >= 0 ? s.v : provs.length;
+  draw('chPrim', { type: 'bar', data: { labels, datasets: ys.map((y, i) => ({ label: 'ชั้นปี ' + y, data: labels.map((_, k) => P.filter(s => s.y === y && idxOf(s) === k).length),
+    backgroundColor: series(i), borderColor: css('--surface'), borderWidth: { right: 2 }, maxBarThickness: 30 })) }, options: o });
+  const row = (lab, L, b) => { const g = L.map(latest).filter(v => v != null); const crit = g.filter(v => v < D.threshold).length, watch = g.filter(v => v >= D.threshold && v < D.watch).length;
+    return `<tr${b ? ' style="font-weight:700"' : ''}><td>${lab}</td><td class="num">${fmt(L.length)}</td><td class="num">${g.length ? (g.reduce((a, c) => a + c, 0) / g.length).toFixed(2) : '–'}</td><td class="num">${g.length ? fmt(crit) : '–'}</td><td class="num">${g.length ? fmt(watch) : '–'}</td></tr>`; };
+  document.getElementById('tblPrim').innerHTML = `<thead><tr><th>จังหวัด</th><th class="num">กำลังศึกษา</th><th class="num">GPAX เฉลี่ย</th><th class="num">ต่ำกว่าเกณฑ์</th><th class="num">เฝ้าระวัง</th></tr></thead><tbody>` +
+    labels.map((l, k) => row(l, P.filter(s => idxOf(s) === k))).join('') + row('รวมปฐมภูมิ', P, true) + '</tbody>';
+}
+
+// ---------- ค้นหานักศึกษารายบุคคล (ไม่ต้องเข้าสู่ระบบ) ----------
+const PS = { page: 1, open: null, t: null, init: false };
+function openSearch() {
+  document.getElementById('psOverlay').classList.add('on'); document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('psQ').focus(), 150);
+  if (!PS.init) { PS.init = true; psLoad(); }
+}
+function closeSearch() { document.getElementById('psOverlay').classList.remove('on'); closeCard(); document.body.style.overflow = ''; }
+let SEC = [];
+/* อ่าน URL จากแอตทริบิวต์ HTML (ไม่ใส่ scriptlet ใน JS เพราะ GAS escape แบบ JS ใส่เครื่องหมายคำพูดเพิ่ม → ลิงก์เสีย หน้าขาว) */
+const ADMIN_URL = (() => { const a = document.getElementById('adminLink'); let u = a ? a.getAttribute('href') : ''; if (!/^https:\/\//.test(u)) u = (document.documentElement.dataset.app || '') + '?page=admin'; return u; })();
+function closeCard() { document.getElementById('psCardOv').classList.remove('on'); }
+document.getElementById('psOverlay').addEventListener('mousedown', e => { if (e.target.id === 'psOverlay') closeSearch(); });
+document.getElementById('psCardOv').addEventListener('mousedown', e => { if (e.target.id === 'psCardOv') closeCard(); });
+document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (document.getElementById('psCardOv').classList.contains('on')) closeCard(); else if (document.getElementById('psOverlay').classList.contains('on')) closeSearch(); });
+const PS_IC = { 'เบอร์โทร': 'phone',  'รหัสนักศึกษา': 'search', 'ชื่อ-สกุล': 'users', 'ชั้นปี': 'calendar', 'หลักสูตร': 'book', 'สถานะ': 'check-circle', 'อาจารย์ที่ปรึกษา': 'teacher', 'สาขาเน้น': 'grad', 'บทบาทชั้นปี': 'shield', 'อีเมล': 'mail', 'GPAX ล่าสุด': 'chart' };
+const PS_ST = { 'กำลังศึกษา': 'var(--good)', 'ลาพัก': 'var(--warning)', 'ลาออก': 'var(--muted)', 'พ้นสภาพ': 'var(--critical)', 'สำเร็จการศึกษา': 'var(--s2)' };
+function showCard(i) {
+  const o = PS.rows[i], F = PS.fields, idx = (PS.page - 1) * 10 + i;
+  const chips = ['ชั้นปี', 'หลักสูตร', 'สถานะ'].filter(f => F.includes(f) && o[f]).map(f => `<span class="badge brand">${f === 'ชั้นปี' ? 'ชั้นปี ' : ''}${f === 'สถานะ' ? `<span class="dot" style="background:${PS_ST[o[f]] || 'var(--muted)'}"></span>` : ''}${psEsc(o[f])}</span>`).join('');
+  const rest = F.filter(f => !['ชื่อ-สกุล'].includes(f));
+  document.getElementById('psPCard').innerHTML = `
+    <div class="ps-pc-top"><small>ข้อมูลนักศึกษา · คณะเภสัชศาสตร์ มข.</small><button class="ps-x" onclick="closeCard()" aria-label="ปิด"><i class="ico" data-i="x"></i></button></div>
+    <div class="ps-pc-av">${psEsc(o._init)}</div>
+    <div class="ps-pc-name"><h2>${psEsc(o['ชื่อ-สกุล'])}<button class="ps-cp" data-cp="${psEsc(o['ชื่อ-สกุล'])}" title="คัดลอกชื่อ-สกุล" aria-label="คัดลอกชื่อ-สกุล">${PS_CP}</button></h2><div class="id">${psEsc(o['รหัสนักศึกษา'])}<button class="ps-cp" data-cp="${psEsc(o['รหัสนักศึกษา'])}" title="คัดลอกรหัสนักศึกษา" aria-label="คัดลอกรหัสนักศึกษา">${PS_CP}</button></div>
+      <div class="ps-pc-chips">${chips}</div></div>
+    <dl class="ps-pc-list${PS.more ? ' more' : ''}">${rest.map((f, k) => (k === PS_SHOW && rest.length > PS_SHOW ? `<button type="button" class="ps-more" onclick="psMore(this)"><span>${PS.more ? 'ย่อข้อมูล' : 'แสดงข้อมูลเพิ่มเติม (' + (rest.length - PS_SHOW) + ')'}</span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>` : '') + (SEC.includes(f) && PS.auto
+      ? `<div class="ps-pc-row"><span class="ic"><i class="ico" data-i="${PS_IC[f] || 'lock'}"></i></span><div style="flex:1;min-width:0"><dt>${psEsc(f)}</dt><dd class="ps-auto" data-f="${psEsc(f)}"><span class="muted">กำลังโหลด…</span></dd></div></div>`
+      : SEC.includes(f)
+      ? `<div class="ps-pc-row"><span class="ic"><i class="ico" data-i="${PS_IC[f] || 'lock'}"></i></span><div style="flex:1;min-width:0"><dt>${psEsc(f)}</dt><dd class="ps-sec" data-f="${psEsc(f)}"><span class="ps-blur">${f === 'อีเมล' ? 'xxxxxxxxxx@kkumail.com' : f === 'เบอร์โทร' ? '0xx-xxx-xxxx' : 'x.xx'}</span></dd></div><button class="ps-eye" data-f="${psEsc(f)}" title="แสดงข้อมูล" aria-label="แสดง${psEsc(f)}"><i class="ico" data-i="eye"></i></button></div>`
+      : `<div class="ps-pc-row"><span class="ic"><i class="ico" data-i="${PS_IC[f] || 'file'}"></i></span><div><dt>${psEsc(f)}</dt><dd>${psEsc(o[f] || '–')}</dd></div></div>`)).join('')}</dl>
+    <div style="padding:0 22px 16px"><a class="btn primary ps-deep" href="${ADMIN_URL}${ADMIN_URL.includes("?") ? "&" : "?"}sid=${encodeURIComponent(o['รหัสนักศึกษา'])}" target="_top"><i class="ico" data-i="shield-lock"></i> รายละเอียดข้อมูลเชิงลึก <span style="opacity:.8;font-weight:400">(ผู้ดูแลระบบ)</span></a></div>
+    <div class="ps-pc-foot"><button class="btn sm" ${i <= 0 && PS.page <= 1 ? 'disabled' : ''} onclick="stepCard(-1)">‹ คนก่อนหน้า</button><span class="muted" style="font-size:12.5px;align-self:center">${idx + 1} / ${PS.total}</span><button class="btn sm" ${idx + 1 >= PS.total ? 'disabled' : ''} onclick="stepCard(1)">คนถัดไป ›</button></div>`;
+  PS.cur = i; document.getElementById('psCardOv').classList.add('on');
+  document.querySelectorAll('#psPCard .ps-eye').forEach(b => b.onclick = () => psReveal(b, o['รหัสนักศึกษา']));
+  if (PS.auto) psRevealAll(o['รหัสนักศึกษา']);
+  document.querySelectorAll('#psPCard [data-cp]').forEach(b => b.onclick = e => { e.stopPropagation(); psCopy(b.dataset.cp, b); });
+}
+/** ค่าเริ่มต้น: แสดงข้อมูลทั้งหมดทันทีเมื่อเปิดการ์ด (เรียกครั้งเดียวต่อคน · เก็บไว้ใช้ซ้ำ) · ปิดได้ในตั้งค่า admin */
+const PS_V = {}, PS_SHOW = 4;
+function psMore(b) { PS.more = !PS.more; const L = b.parentNode; L.classList.toggle('more', PS.more); b.querySelector('span').textContent = PS.more ? 'ย่อข้อมูล' : 'แสดงข้อมูลเพิ่มเติม (' + (L.querySelectorAll('.ps-pc-row').length - PS_SHOW) + ')'; }
+const PS_CP = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>', PS_OK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+/** คัดลอกข้อความ (รองรับเบราว์เซอร์ที่ไม่อนุญาต clipboard API ใน iframe) */
+function psCopy(t, b) {
+  const ok = () => { const h = b.innerHTML; b.classList.add('done'); b.innerHTML = PS_OK; setTimeout(() => { b.innerHTML = h; b.classList.remove('done'); }, 1400); };
+  const old = () => { const a = document.createElement('textarea'); a.value = t; a.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); ok(); } catch (e) {} a.remove(); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, old); else old();
+}
+function psRevealAll(id) {
+  const D = [...document.querySelectorAll('#psPCard .ps-auto')]; if (!D.length) return;
+  const apply = V => D.forEach(dd => { const v = V[dd.dataset.f] || '', f = dd.dataset.f;
+    dd.innerHTML = !v ? '<span class="muted">–</span>' : f === 'อีเมล' ? `<a href="mailto:${psEsc(v)}">${psEsc(v)}</a>` : f === 'เบอร์โทร' ? `<a href="tel:${psEsc(v.replace(/[^\d+]/g, ''))}">${psEsc(v)}</a>` : /GPA/.test(f) ? `<b class="ps-gpax" style="color:${Number(v) < 2 ? 'var(--critical)' : Number(v) < 2.5 ? 'var(--warning)' : 'var(--good)'}">${psEsc(v)}</b>` : psEsc(v); });
+  if (PS_V[id]) return apply(PS_V[id]);
+  google.script.run.withSuccessHandler(r => { PS_V[id] = r.values || {}; if (PS.rows[PS.cur] && PS.rows[PS.cur]['รหัสนักศึกษา'] === id) apply(PS_V[id]); })
+    .withFailureHandler(e => D.forEach(dd => dd.innerHTML = `<span class="ps-err">${psEsc(e.message || e)}</span>`)).publicRevealAll(id);
+}
+function psReveal(b, id) {
+  const f = b.dataset.f, dd = b.parentNode.querySelector('.ps-sec');
+  if (b.classList.contains('on')) { dd.innerHTML = dd.dataset.mask; b.classList.remove('on'); b.innerHTML = '<i class="ico" data-i="eye"></i>'; return; }
+  if (dd.dataset.v != null) return psShow(b, dd, dd.dataset.v);
+  dd.dataset.mask = dd.innerHTML; b.disabled = true; b.innerHTML = '<span class="spin sm"></span>';
+  google.script.run.withSuccessHandler(r => { b.disabled = false; dd.dataset.v = r.value || ''; psShow(b, dd, r.value || ''); })
+    .withFailureHandler(e => { b.disabled = false; b.innerHTML = '<i class="ico" data-i="eye"></i>'; dd.innerHTML = `<span class="ps-err">${psEsc(e.message || e)}</span>`; setTimeout(() => dd.innerHTML = dd.dataset.mask, 4000); })
+    .publicReveal(id, f);
+}
+function psShow(b, dd, v) {
+  if (!dd.dataset.mask) dd.dataset.mask = dd.innerHTML;
+  const f = b.dataset.f;
+  dd.innerHTML = !v ? '<span class="muted">– ไม่มีข้อมูล –</span>' : f === 'อีเมล' ? `<a href="mailto:${psEsc(v)}">${psEsc(v)}</a>` : f === 'เบอร์โทร' ? `<a href="tel:${psEsc(v.replace(/[^\d+]/g, ''))}">${psEsc(v)}</a>` : `<b class="ps-gpax" style="color:${Number(v) < 2 ? 'var(--critical)' : Number(v) < 2.5 ? 'var(--warning)' : 'var(--good)'}">${psEsc(v)}</b>`;
+  b.classList.add('on'); b.innerHTML = '<i class="ico" data-i="eye-off"></i>'; b.title = 'ซ่อน';
+}
+function stepCard(d) {
+  const i = PS.cur + d;
+  if (i >= 0 && i < PS.rows.length) return showCard(i);
+  PS.page += d; PS.after = d > 0 ? 0 : 9; psLoad();
+}
+function psEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function psHl(txt, q) {
+  const t = psEsc(txt); if (!q) return t;
+  const i = String(txt).toLowerCase().indexOf(q.toLowerCase()); if (i < 0) return t;
+  return psEsc(String(txt).slice(0, i)) + '<mark class="ps-hl">' + psEsc(String(txt).slice(i, i + q.length)) + '</mark>' + psEsc(String(txt).slice(i + q.length));
+}
+function psLoad() {
+  const q = document.getElementById('psQ').value, idq = document.getElementById('psId').value, y = document.getElementById('psYear').value, p = document.getElementById('psProg').value;
+  document.getElementById('psCount').textContent = 'กำลังค้นหา…';
+  google.script.run.withSuccessHandler(r => psRender(r, q, idq)).withFailureHandler(e => { document.getElementById('psCount').textContent = '⚠ ' + e.message; }).publicSearch(q, idq, y, p, PS.page);
+}
+function psRender(r, q, idq) {
+  if (r.off) { document.getElementById('psCount').textContent = 'ปิดการค้นหารายบุคคลในหน้านี้ — กรุณาเข้าสู่ระบบผู้ดูแล'; document.getElementById('psTbl').innerHTML = ''; return; }
+  const ys = document.getElementById('psYear'), ps = document.getElementById('psProg');
+  if (ys.options.length === 1) { r.years.forEach(y => ys.add(new Option('ชั้นปี ' + y, y))); r.programs.forEach(p => ps.add(new Option(p, p))); }
+  PS.page = r.page; PS.rows = r.rows; PS.fields = r.fields; PS.total = r.total; SEC = r.secret || []; PS.auto = r.auto !== false;
+  if (PS.after != null && document.getElementById('psCardOv').classList.contains('on') && r.rows.length) { const a = Math.min(PS.after, r.rows.length - 1); PS.after = null; setTimeout(() => showCard(a), 0); } else PS.after = null;
+  const F = r.fields, cols = F.filter(f => ['รหัสนักศึกษา', 'ชื่อ-สกุล', 'ชั้นปี', 'หลักสูตร', 'สถานะ'].includes(f));
+  const s = (r.page - 1) * 10;
+  document.getElementById('psCount').textContent = r.total ? `พบ ${r.total.toLocaleString()} คน · แสดงรายการที่ ${s + 1}–${s + r.rows.length}` : '';
+  const qq = String(q || '').trim(), iq = String(idq || '').replace(/\D/g, '');
+  const idHl = v => { if (!iq) return psEsc(v); const d = String(v).replace('-', ''); if (d.indexOf(iq) !== 0) return psEsc(v); const n = iq.length > 9 ? iq.length + 1 : iq.length; return '<mark class="ps-hl">' + psEsc(String(v).slice(0, n)) + '</mark>' + psEsc(String(v).slice(n)); };
+  document.getElementById('psTbl').innerHTML = `<thead><tr><th>#</th>${cols.map(c => `<th${c === 'ชั้นปี' ? ' class="num"' : ''}>${psEsc(c)}</th>`).join('')}<th></th></tr></thead><tbody>` +
+    (r.rows.length ? r.rows.map((o, i) => `<tr data-i="${i}"><td class="muted">${s + i + 1}</td>${cols.map(c => c === 'ชื่อ-สกุล' ? `<td><span class="av">${psEsc(o._init)}</span>${psHl(o[c], qq)}</td>` : c === 'รหัสนักศึกษา' ? `<td>${idHl(o[c])}</td>` : `<td${c === 'ชั้นปี' ? ' class="num"' : ''}>${psEsc(o[c])}</td>`).join('')}<td class="muted" style="font-size:12.5px;white-space:nowrap">รายละเอียด ›</td></tr>
+`).join('')
+    : `<tr><td colspan="${cols.length + 2}" class="muted" style="text-align:center;padding:24px">ไม่พบนักศึกษา${qq ? ' ชื่อ “' + psEsc(qq) + '”' : ''}${iq ? ' รหัส “' + psEsc(iq) + '”' : ''}</td></tr>`) + '</tbody>';
+  document.querySelectorAll('#psTbl tr[data-i]').forEach(tr => tr.onclick = () => showCard(Number(tr.dataset.i)));
+  const pg = document.getElementById('psPager');
+  pg.innerHTML = r.pages > 1 ? `<button class="btn sm" ${r.page <= 1 ? 'disabled' : ''} data-pg="${r.page - 1}">‹ ก่อนหน้า</button><span class="muted">หน้า ${r.page} / ${r.pages}</span><button class="btn sm" ${r.page >= r.pages ? 'disabled' : ''} data-pg="${r.page + 1}">ถัดไป ›</button>` : '';
+  pg.querySelectorAll('[data-pg]').forEach(b => b.onclick = () => { PS.page = Number(b.dataset.pg); psLoad(); });
+}
+['psQ', 'psId'].forEach(id => document.getElementById(id).addEventListener('input', () => { clearTimeout(PS.t); PS.t = setTimeout(() => { PS.page = 1; psLoad(); }, 300); }));
+document.getElementById('psId').addEventListener('input', e => { e.target.value = e.target.value.replace(/[^\d-]/g, ''); });
+document.getElementById('psClear').onclick = () => { ['psQ', 'psId'].forEach(i => document.getElementById(i).value = ''); document.getElementById('psYear').value = ''; document.getElementById('psProg').value = ''; PS.page = 1; psLoad(); };
+['psYear', 'psProg'].forEach(id => document.getElementById(id).onchange = () => { PS.page = 1; psLoad(); });
+</script>
+</body>
+</html>
