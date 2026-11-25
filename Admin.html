@@ -897,7 +897,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
-  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 25/11/69 อังกฤษ-คอม</small></span></button>
+  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 25/11/69 #2</small></span></button>
 </aside>
 <div class="side-overlay" id="sideOverlay"></div>
 <div class="shell-main">
@@ -5465,9 +5465,9 @@ function tsRender() {
     <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${[['ทั้งหมด', B0.length, '', ''], ['สอบแล้ว', cnt(s => tsG(s) === 'done'), 'ok', 'done'], ['ยังไม่สอบ', cnt(s => s === 'none'), 'bad', 'none'], ['ไม่มีข้อมูล', cnt(s => s === 'nodata'), '', 'nodata']]
       .map(([l, v, cl, f]) => `<button class="mini" data-tsf="${f}" style="text-align:left;cursor:pointer;font:inherit;color:inherit;${TS.f === f && f ? 'border-color:var(--brand);box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 20%,transparent)' : ''}"><div class="l">${l}</div><div class="v ${cl}">${v.toLocaleString()}</div></button>`).join('')}</div>
     <div class="toolbar"><input type="search" id="elQ" placeholder="ค้นหา รหัส / ชื่อ / อาจารย์ที่ปรึกษา" value="${esc(TS.q)}"><span class="muted" style="font-size:13px">${R.length.toLocaleString()} คน${TS.f ? '' : ' · กดการ์ดเพื่อกรอง'}</span><div class="spacer"></div>
-      <button class="btn" onclick="XP.open(() => tsExport(false), { format: 'xlsx' })"><i class="ico" data-i="file-sheet"></i> Excel</button>
-      <button class="btn" onclick="XP.open(() => tsExport(false), { format: 'pdf' })"><i class="ico" data-i="file-pdf"></i> PDF</button>
-      <button class="btn" onclick="XP.open(() => tsExport(true), { format: 'xlsx' })" title="อังกฤษ + คอม ในไฟล์เดียว (ตามชั้นปี/กลุ่มที่เลือก)"><i class="ico" data-i="download"></i> ทั้งสองวิชา</button></div>
+      <button class="btn primary" onclick="XP.open(tsExportGrp, { format: 'xlsx' })" title="รายชื่อทุกคน · สอบคอม / ผลคะแนนภาษาอังกฤษ สอบแล้ว-ยังไม่สอบ · แยกชีตตามกลุ่ม"><i class="ico" data-i="file-sheet"></i> รายชื่อแยกกลุ่ม Excel</button>
+      <button class="btn" onclick="XP.open(tsExportGrp, { format: 'pdf' })"><i class="ico" data-i="file-pdf"></i> รายชื่อแยกกลุ่ม PDF</button>
+      <button class="btn" onclick="XP.open(() => tsExport(true), { format: 'xlsx' })" title="คะแนน/เกรด/ภาคที่สอบ ครบทุกคอลัมน์"><i class="ico" data-i="download"></i> รายละเอียด</button>
     <div class="table-wrap" style="max-height:62vh"><table class="t"><thead><tr><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th class="num">ปี</th><th>หลักสูตร</th><th>${TS_K[TS.k]}</th><th>รายละเอียด</th><th>${TS.k === 'eng' ? 'คอมพิวเตอร์' : 'ภาษาอังกฤษ'}</th><th>อาจารย์ที่ปรึกษา</th><th></th></tr></thead><tbody>` +
     (PG.length ? PG.map(r => { const x = tsOf(r), o = tsOf(r, TS.k === 'eng' ? 'comp' : 'eng'); return `<tr><td>${esc(r.id)}</td><td>${esc(r.name)}</td><td class="num">${esc(r.year)}</td><td>${esc(r.program)}</td>
       <td><span class="st-chip ${TS_ST[x.st][0]}">${TS_ST[x.st][1]}</span></td><td style="white-space:normal;min-width:180px;font-size:13px">${esc(tsDetail(r))}</td>
@@ -5497,6 +5497,23 @@ async function tsExport(both) {
     rows: R.map((r, i) => [i + 1, r.id, r.name, r.year, r.program, r.major || '', r.advisor].concat(k === 'eng' ? vE(r) : k === 'comp' ? vC(r) : vE(r).concat(vC(r)), [TS_BOTH[tsBoth(r)], r.reg || ''])) };
 }
 /** ส่งออกตัวเลขสรุป (แยกชั้นปี · กลุ่ม · ชั้นปี×กลุ่ม) ตามตัวกรองชั้นปี/กลุ่มที่เลือก — นำไปทำ Pivot/กราฟต่อได้ */
+/** รายชื่อนักศึกษาแต่ละคน แยกกลุ่ม: สอบคอม / ผลคะแนนภาษาอังกฤษ = สอบแล้ว · ยังไม่สอบ · ไม่มีข้อมูล
+ *  Excel: ชีตรวม (เรียงกลุ่ม → ชั้นปี → รหัส) + ชีตแยกแต่ละกลุ่ม + ชีตสรุป · ตามตัวกรองชั้นปี/กลุ่ม/การ์ด/ค้นหา */
+async function tsExportGrp() {
+  const q = TS.q.toLowerCase(), G = st => ({ done: 'สอบแล้ว', none: 'ยังไม่สอบ', nodata: 'ไม่มีข้อมูล' })[tsG(st)];
+  const R = tsBase().filter(r => (!TS.c || TS_C[TS.c][1](r)) && (!q || (r.id + ' ' + r.name + ' ' + r.advisor).toLowerCase().includes(q)))
+    .sort((a, b) => String(a.program).localeCompare(String(b.program), 'th') || (Number(a.year) || 9) - (Number(b.year) || 9) || a.id.localeCompare(b.id));
+  const row = (r, i) => [i + 1, r.id, r.name, r.year, r.program, G(tsOf(r, 'comp').st), G(tsOf(r, 'eng').st), r.advisor];
+  const headers = ['ที่', 'รหัสนักศึกษา', 'ชื่อ-สกุล', 'ชั้นปี', 'กลุ่ม/หลักสูตร', 'สอบคอมพิวเตอร์', 'ผลคะแนนภาษาอังกฤษ', 'อาจารย์ที่ปรึกษา'];
+  const progs = [...new Set(R.map(r => r.program || '-'))];
+  const sumH = ['กลุ่ม/หลักสูตร', 'นักศึกษา', 'คอม สอบแล้ว', 'คอม ยังไม่สอบ', 'คอม ไม่มีข้อมูล', 'อังกฤษ สอบแล้ว', 'อังกฤษ ยังไม่สอบ', 'อังกฤษ ไม่มีข้อมูล'];
+  const sumR = L => { const c = tsCount(L); return [c.n, c.compD, c.compN, c.compX, c.engD, c.engN, c.engX]; };
+  const t = 'รายชื่อสอบคอมพิวเตอร์และผลคะแนนภาษาอังกฤษ';
+  return { title: t + ' — ' + tsScopeTxt(), sub: 'แยกตามกลุ่ม · ข้อมูลจากไฟล์ตรวจสอบจบ (REG) ณ ' + new Date().toLocaleDateString('th-TH') + ' · ไม่มีข้อมูล = ยังไม่มีไฟล์ตรวจสอบจบ', file: 'รายชื่อสอบคอม_อังกฤษ_แยกกลุ่ม' + (TS.y ? '_ปี' + TS.y : ''), sheet: 'รวมทุกกลุ่ม',
+    headers, rows: R.map(row),
+    extraSheets: [{ name: 'สรุป', headers: sumH, rows: progs.map(p => [p].concat(sumR(R.filter(r => (r.program || '-') === p)))).concat([['รวม'].concat(sumR(R))]) }]
+      .concat(progs.map((p, i) => ({ name: (i + 1) + '. ' + p.replace(/[\\/?*\[\]:]/g, ' ').slice(0, 27), headers, rows: R.filter(r => (r.program || '-') === p).map(row) }))) };
+}
 async function tsExportSum() {
   const B0 = tsBase(), rows = [], add = (dim, lab, L) => { const c = tsCount(L); if (!c.n) return;
     rows.push([dim, lab, c.n, c.both, tsPct(c.both, c.n), c.engD, c.engN, c.engX, tsPct(c.engD, c.n), c.compD, c.compN, c.compX, tsPct(c.compD, c.n), c.one, c.none2, c.nodata]); };

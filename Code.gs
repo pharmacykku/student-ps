@@ -1749,6 +1749,22 @@ function readPlan_() {
   });
   return out;
 }
+/** แผนที่ไม่ได้ระบุภาค → เดาภาคจากการลงทะเบียนจริงของนักศึกษาทุกคน (ภาคที่ลงมากที่สุด)
+ *  ถ้ายังไม่มีใครลง และเป็นรายวิชาฝึกปฏิบัติวิชาชีพ → ภาค 3 (เช่น PS114600 / PS114601 ปี 4 ภาค 3) */
+function planFillTerms_(plan, cs) {
+  let cnt = null;
+  const guess = codes => {
+    if (!cnt) { cnt = {}; Object.keys(cs || {}).forEach(id => { const H = cs[id].hist; Object.keys(H).forEach(k => H[k].forEach(h => { const t = (String(h.t || '').match(/[123]/) || [''])[0]; if (t) { const o = cnt[k] = cnt[k] || {}; o[t] = (o[t] || 0) + 1; } })); }); }
+    const o = {}; codes.forEach(k => Object.keys(cnt[k] || {}).forEach(t => o[t] = (o[t] || 0) + cnt[k][t]));
+    return Object.keys(o).sort((a, b) => o[b] - o[a])[0] || '';
+  };
+  Object.keys(plan || {}).forEach(cur => (plan[cur].courses || []).forEach(x => {
+    if ((String(x.term || '').match(/[123]/) || [''])[0]) return;
+    const t = guess([x.code].concat(x.alts || [])) || (/ฝึกปฏิบัติ(งาน)?วิชาชีพ/.test(String(x.name || '') + String(x.cat || '')) ? '3' : '');
+    if (t) { x.term = t; x.termGuess = true; }
+  }));
+  return plan;
+}
 function adminPlanSummary(token) {
   tabGuard_(auth_(token), 'pElig');
   const plan = readPlan_();
@@ -1876,7 +1892,7 @@ const ELIG_TYPES = {
   regDate:    { label: 'ไฟล์ตรวจสอบจบ (REG) อายุไม่เกิน', p: 'num', unit: 'วัน' }
 };
 const ELIG_MODES = ['intern4', 'intern6', 'grad', 'overdue'];
-const COMP_CODE = '000160', ELIG_VER = 3;
+const COMP_CODE = '000160', ELIG_VER = 4;
 const isFreeElec_ = cat => /เลือก\s*เสร/.test(String(cat || ''));
 /** รหัสวิชาบังคับตามแผน (รวมรหัสทดแทน) → รหัสหลักในแผน */
 function planReqCodes_(P, extra) {
@@ -2026,7 +2042,7 @@ function eligComputeRaw_(mode, year) {
   const target = Number(year) || cfg.year, CO = cfg.conds.filter(c => c.on);
   const needPlan = CO.some(c => c.type === 'planReg' || c.type === 'planPass');
   const st = readTable_(SH.STUDENTS), H = idx_(st.headers);
-  const plan = readPlan_(), gc = gradChkMap_(), cs = coursesById_();
+  const gc = gradChkMap_(), cs = coursesById_(), plan = planFillTerms_(readPlan_(), cs);
   const nowYear = acadYearNow_(), now = Date.now();
   const FAIL = ['F', 'U'], BAD = ['F', 'U', 'I'];
   const round = mode + '|' + target + '|' + nowYear, REV = eligReviews_(round);
