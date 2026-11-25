@@ -1,8 +1,6 @@
 # อัปโค้ดขึ้น Google Apps Script อัตโนมัติเมื่อ push เข้า main
-# ต้องตั้ง Secrets ใน GitHub (Settings → Secrets and variables → Actions):
-#   CLASPRC_JSON   = เนื้อหาไฟล์ ~/.clasprc.json หลังรัน `clasp login` บนเครื่องตัวเอง
-#   SCRIPT_ID      = Script ID ของโปรเจกต์ Apps Script
-#   DEPLOYMENT_ID  = Deployment ID ของ Web app เดิม (เพื่อให้ลิงก์ /exec เดิมใช้ต่อได้)
+# ยังไม่ตั้งค่า → ข้ามขั้นตอน deploy (ไม่ขึ้น error) · วิธีตั้งค่าดู DEPLOY.md
+# Secrets ที่ต้องมี: CLASPRC_JSON, SCRIPT_ID, DEPLOYMENT_ID + ไฟล์ appsscript.json ใน repo
 name: Deploy to Apps Script
 on:
   push:
@@ -13,17 +11,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check setup
+        id: chk
+        env:
+          C: ${{ secrets.CLASPRC_JSON }}
+          S: ${{ secrets.SCRIPT_ID }}
+          D: ${{ secrets.DEPLOYMENT_ID }}
+        run: |
+          if [ -f appsscript.json ] && [ -n "$C" ] && [ -n "$S" ] && [ -n "$D" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::ยังไม่ได้ตั้งค่าอัปขึ้น Apps Script อัตโนมัติ — ข้ามขั้นตอน deploy (โค้ดเก็บบน GitHub แล้ว) · ดูวิธีตั้งค่าใน DEPLOY.md"
+          fi
+      - if: steps.chk.outputs.ready == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install -g @google/clasp@2.4.2
-      - name: Check manifest
-        run: test -f appsscript.json || (echo "ไม่พบ appsscript.json — คัดลอกจาก Apps Script editor มาไว้ใน repo ก่อน" && exit 1)
+      - if: steps.chk.outputs.ready == 'true'
+        run: npm install -g @google/clasp@2.4.2
       - name: Write credentials
+        if: steps.chk.outputs.ready == 'true'
+        env:
+          C: ${{ secrets.CLASPRC_JSON }}
+          S: ${{ secrets.SCRIPT_ID }}
         run: |
-          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
-          echo '{"scriptId":"${{ secrets.SCRIPT_ID }}","rootDir":"."}' > .clasp.json
+          printf '%s' "$C" > ~/.clasprc.json
+          printf '{"scriptId":"%s","rootDir":"."}' "$S" > .clasp.json
       - name: Push code
+        if: steps.chk.outputs.ready == 'true'
         run: clasp push -f
       - name: Update web app deployment
-        run: clasp deploy -i "${{ secrets.DEPLOYMENT_ID }}" -d "GitHub ${{ github.sha }}"
+        if: steps.chk.outputs.ready == 'true'
+        env:
+          D: ${{ secrets.DEPLOYMENT_ID }}
+        run: clasp deploy -i "$D" -d "GitHub ${GITHUB_SHA::7}"
