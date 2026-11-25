@@ -5423,7 +5423,7 @@ function tsRows() {
 function tsRender() {
   const D = TS.data, B0 = tsBase(), R = tsRows(), cnt = f => B0.filter(r => f(tsOf(r).st)).length, canW = ME.role !== 'viewer';
   const years = [...new Set(D.rows.map(r => r.year).filter(Boolean))].sort(), progs = [...new Set(D.rows.map(r => r.program).filter(Boolean))].sort();
-  const byY = years.map(y => { const L = D.rows.filter(r => r.year === y && (!TS.prog || r.program === TS.prog)); const c = k => [L.filter(r => tsOf(r, k).st === 'pass').length, L.filter(r => tsG(tsOf(r, k).st) === 'done').length, L.filter(r => tsOf(r, k).st === 'none').length, L.filter(r => tsOf(r, k).st === 'nodata').length]; return [y, L.length, c('eng'), c('comp')]; });
+  const byY = years.map(y => { const L = D.rows.filter(r => r.year === y && (!TS.prog || r.program === TS.prog)); const c = k => [L.filter(r => tsG(tsOf(r, k).st) === 'done').length, L.filter(r => tsOf(r, k).st === 'none').length, L.filter(r => tsOf(r, k).st === 'nodata').length]; return [y, L.length, c('eng'), c('comp')]; });
   $('elRule').innerHTML = EL_RULES.test();
   const P = TS.page = Math.min(TS.page || 0, Math.max(0, Math.ceil(R.length / 50) - 1)), PG = R.slice(P * 50, P * 50 + 50);
   $('elBody').innerHTML = `
@@ -5435,11 +5435,11 @@ function tsRender() {
       ${canW ? `<button class="btn" onclick="$('tsFile').click()"><i class="ico" data-i="upload"></i> นำเข้าผลสอบอังกฤษ</button><input type="file" id="tsFile" accept=".xlsx,.xls,.csv" hidden><button class="btn" onclick="tsTemplate()"><i class="ico" data-i="file-sheet"></i> แม่แบบ</button>` : ''}
       <button class="btn" onclick="elLoad()"><i class="ico" data-i="refresh"></i> โหลดใหม่</button>
     </div>
-    <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">${[['ทั้งหมด', B0.length, '', ''], ['สอบแล้ว', cnt(s => tsG(s) === 'done'), 'ok', 'done'], ['สอบผ่านแล้ว', cnt(s => s === 'pass'), 'ok', 'pass'], ['สอบแล้ว · ยังไม่ผ่าน', cnt(s => tsG(s) === 'done' && s !== 'pass'), 'warn', 'notpass'], ['ยังไม่สอบ', cnt(s => s === 'none'), 'bad', 'none'], ['ไม่มีข้อมูล', cnt(s => s === 'nodata'), '', 'nodata']]
+    <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${[['ทั้งหมด', B0.length, '', ''], ['สอบแล้ว', cnt(s => tsG(s) === 'done'), 'ok', 'done'], ['ยังไม่สอบ', cnt(s => s === 'none'), 'bad', 'none'], ['ไม่มีข้อมูล', cnt(s => s === 'nodata'), '', 'nodata']]
       .map(([l, v, cl, f]) => `<button class="mini" data-tsf="${f}" style="text-align:left;cursor:pointer;font:inherit;color:inherit;${TS.f === f && f ? 'border-color:var(--brand);box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 20%,transparent)' : ''}"><div class="l">${l}</div><div class="v ${cl}">${v.toLocaleString()}</div></button>`).join('')}</div>
     <details class="ts-sum" style="margin:6px 0 10px"><summary class="muted" style="cursor:pointer;font-size:13.5px">สรุปรายชั้นปี (อังกฤษ · คอม)</summary>
-      <div class="table-wrap" style="margin-top:8px"><table class="t"><thead><tr><th>ชั้นปี</th><th class="num">นักศึกษา</th><th class="num">อังกฤษ ผ่าน</th><th class="num">อังกฤษ สอบแล้ว</th><th class="num">อังกฤษ ยังไม่สอบ</th><th class="num">ไม่มีข้อมูล</th><th class="num">คอม ผ่าน</th><th class="num">คอม สอบแล้ว</th><th class="num">คอม ยังไม่สอบ</th><th class="num">ไม่มีข้อมูล</th></tr></thead><tbody>
-      ${byY.map(([y, n, e, c]) => `<tr><td>ปี ${y}</td><td class="num">${n}</td>${e.concat(c).map((v, i) => `<td class="num ${i % 4 === 2 && v ? 'bad' : ''}">${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>
+      <div class="table-wrap" style="margin-top:8px"><table class="t"><thead><tr><th>ชั้นปี</th><th class="num">นักศึกษา</th><th class="num">อังกฤษ สอบแล้ว</th><th class="num">อังกฤษ ยังไม่สอบ</th><th class="num">ไม่มีข้อมูล</th><th class="num">คอม สอบแล้ว</th><th class="num">คอม ยังไม่สอบ</th><th class="num">ไม่มีข้อมูล</th></tr></thead><tbody>
+      ${byY.map(([y, n, e, c]) => `<tr><td>ปี ${y}</td><td class="num">${n}</td>${e.concat(c).map((v, i) => `<td class="num ${i % 3 === 1 && v ? 'bad' : ''}">${v}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>
     <div class="toolbar"><input type="search" id="elQ" placeholder="ค้นหา รหัส / ชื่อ / อาจารย์ที่ปรึกษา" value="${esc(TS.q)}"><span class="muted" style="font-size:13px">${R.length.toLocaleString()} คน${TS.f ? '' : ' · กดการ์ดเพื่อกรอง'}</span><div class="spacer"></div>
       <button class="btn" onclick="XP.open(() => tsExport(false), { format: 'xlsx' })"><i class="ico" data-i="file-sheet"></i> Excel</button>
       <button class="btn" onclick="XP.open(() => tsExport(false), { format: 'pdf' })"><i class="ico" data-i="file-pdf"></i> PDF</button>
