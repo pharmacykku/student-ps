@@ -3797,7 +3797,7 @@ function renderAcad() {
       ${a.extra ? (() => { const X = a.extra, q = X.comp;
         return `<div class="tiles" style="margin-top:10px">
         <div class="tile"><div class="l">สอบคอมพิวเตอร์ (${esc(q.code)})</div><div class="v" style="font-size:18px">${q.st === 'pass' ? `<span class="ok">ผ่าน · ${esc(q.grade)}</span>` : q.st === 'none' ? '<span class="bad">ยังไม่สอบ</span>' : q.st === 'pend' ? '<span class="warn">รอผล</span>' : `<span class="bad">${esc(q.grade)}</span>`}</div><div class="f">${esc(q.name || 'ตรวจจากรายวิชาในไฟล์ตรวจสอบจบ')}</div></div>
-        ${X.eng ? `<div class="tile"><div class="l">สอบภาษาอังกฤษ</div><div class="v" style="font-size:18px">${X.eng.st === 'pass' ? '<span class="ok">ผ่าน</span>' : X.eng.st === 'taken' ? '<span class="warn">สอบแล้ว · ยังไม่ผ่าน</span>' : '<span class="bad">ยังไม่สอบ</span>'}</div><div class="f">${esc(X.eng.score ? [X.eng.test, X.eng.score, X.eng.result, X.eng.date].filter(Boolean).join(' · ') : 'ใบตรวจสอบจบ: ' + (X.eng.v || '–'))}</div></div>` : ''}
+        ${X.eng ? `<div class="tile"><div class="l">ผลคะแนนภาษาอังกฤษ</div><div class="v" style="font-size:18px">${X.eng.st === 'pass' ? '<span class="ok">สอบแล้ว · PASS</span>' : '<span class="bad">ยังไม่สอบ</span>'}</div><div class="f">ใบตรวจสอบจบ: ${esc(X.eng.v || '–')}</div></div>` : ''}
         <div class="tile"><div class="l">วิชาบังคับหล่นหมวดเลือกเสรี</div><div class="v" style="font-size:18px">${!X.hasPlan ? '<span class="muted">ไม่มีแผนการศึกษา</span>' : X.mis.length ? `<span class="bad">${X.mis.length} วิชา</span>` : '<span class="ok">ไม่มี</span>'}</div><div class="f">${X.mis.map(m => esc(m.code + ' ' + m.name)).join('<br>')}</div></div>
       </div>`; })() : ''}
       <div class="cat-list" style="margin-top:10px">${(S.cats || []).map(c => { const L = catCourses(a.courses, c.no), on = acadCat === c.no;
@@ -4187,7 +4187,7 @@ const EL_TITLE = { intern4: 'ตรวจสอบการออกฝึกง
 const EL_RULES = {
   intern4: () => elRuleText(), intern6: () => elRuleText(), grad: () => elRuleText(), overdue: () => elRuleText(),
   prob: () => `<b>สถานภาพ (คำนวณเบื้องต้น)</b> จาก GPAX/GPA รายภาคปกติ (ไม่นับภาคฤดูร้อน) ตามเกณฑ์ที่ตั้งไว้ · ใช้ร่วมกับกลุ่มเสี่ยง คัดกรองสุขภาวะ พอร์ทัลอาจารย์ และการแจ้งเตือน · สถานภาพทางการเป็นไปตามประกาศของมหาวิทยาลัย`,
-  test: () => `<b>สอบภาษาอังกฤษ / สอบคอมพิวเตอร์</b> ของนักศึกษาสถานะกำลังศึกษา · อังกฤษ: ผลที่นำเข้า (ปุ่ม “นำเข้าผลสอบ”) + ช่องภาษาอังกฤษในใบตรวจสอบจบ (PASS = ผ่าน) · คอม: รายวิชา ${esc(((TS.data || {}).codes || ['000160']).join(', '))} ในไฟล์ตรวจสอบจบ · “ไม่มีข้อมูล” = ยังไม่มีไฟล์ตรวจสอบจบและไม่มีผลที่นำเข้า`,
+  test: () => `<b>สอบภาษาอังกฤษ / สอบคอมพิวเตอร์</b> ของนักศึกษาสถานะกำลังศึกษา จากไฟล์ตรวจสอบจบ (REG) · อังกฤษ: ช่อง “ผลคะแนนภาษาอังกฤษ” PASS = สอบแล้ว · FAIL/ว่าง = ยังไม่สอบ · คอม: รายวิชา ${esc(((TS.data || {}).codes || ['000160']).join(', '))} · “ไม่มีข้อมูล” = ยังไม่มีไฟล์ตรวจสอบจบ`,
   plan: () => `<b>แผนการศึกษา</b> ใช้ตรวจ “ลงทะเบียนครบตามแผน” ของการฝึกงาน · วิธีที่ง่ายที่สุด: เลือก<b>นักศึกษาต้นแบบ</b>ที่เรียนตามแผนและนำเข้าไฟล์ตรวจสอบจบแล้ว ระบบจะดึงรายวิชาแยกชั้นปีให้ (ไม่รวมวิชาเลือกเสรี) → ดาวน์โหลด Excel ตรวจทาน/เพิ่มรหัสวิชาทดแทน → นำเข้ากลับ`
 };
 // ---------- แผงเงื่อนไข (สวิตช์เปิด/ปิด · ติ๊กชั้นปี · เพิ่ม/ลบได้อิสระ) ----------
@@ -4502,7 +4502,7 @@ function elXChips(r) {
   const q = r.comp, e = r.eng || {}, m = r.mis || [];
   const ch = (c, t, tip) => `<span class="el-fb ${c}" title="${esc(tip || '')}">${t}</span>`;
   return ch(q.st === 'pass' ? 'ok' : q.st === 'pend' ? 'warn' : 'bad', 'คอม ' + (q.st === 'pass' ? '✓' : q.st === 'none' ? 'ยังไม่สอบ' : q.st === 'pend' ? 'รอผล' : esc(q.grade)), q.code + (q.name ? ' ' + q.name : '') + (q.grade ? ' · ' + q.grade : ''))
-    + ch(e.st === 'pass' ? 'ok' : e.st === 'taken' ? 'warn' : 'bad', 'อังกฤษ ' + (e.st === 'pass' ? '✓' : e.st === 'taken' ? 'ยังไม่ผ่าน' : 'ยังไม่สอบ'), e.score ? [e.test, e.score, e.result, e.date].filter(Boolean).join(' · ') : 'ผลคะแนนภาษาอังกฤษในใบตรวจสอบจบ: ' + (e.v || 'ไม่มีข้อมูล'))
+    + ch(e.st === 'pass' ? 'ok' : 'bad', 'อังกฤษ ' + (e.st === 'pass' ? '✓' : 'ยังไม่สอบ'), 'ผลคะแนนภาษาอังกฤษในใบตรวจสอบจบ: ' + (e.v || 'ไม่มีข้อมูล'))
     + (m.length ? ch('bad', 'หล่นเสรี ' + m.length, m.map(x => x.code + ' ' + x.name).join('\n')) : '');
 }
 function elBoxesHtml() {
@@ -4538,7 +4538,7 @@ function elLights(r) {
   return [
     { k: 'reg', t: 'ลงครบตามแผน', ok: !has || !P.length ? null : nMiss === 0, d: P.length ? `ลงแล้ว ${P.length - nMiss}/${P.length} วิชา` : 'ไม่มีแผนการศึกษา' },
     { k: 'f', t: 'ไม่ติด F', ok: !has ? null : !elOpenF(r).length, d: elOpenF(r).length ? 'F ค้าง ' + elOpenF(r).length + ' วิชา' : 'ไม่มี F ค้าง' },
-    { k: 'eng', t: 'อังกฤษ', ok: !has || !r.eng ? null : r.eng.st === 'pass', d: r.eng ? (r.eng.st === 'pass' ? 'ผ่าน' + (r.eng.score ? ' ' + r.eng.score : '') : r.eng.st === 'taken' ? 'สอบแล้ว ยังไม่ผ่าน' : 'ยังไม่สอบ') : '–' },
+    { k: 'eng', t: 'อังกฤษ', ok: !has || !r.eng ? null : r.eng.st === 'pass', d: r.eng ? (r.eng.st === 'pass' ? 'PASS' : 'ยังไม่สอบ') : '–' },
     { k: 'comp', t: 'สอบคอม', ok: !has || !r.comp ? null : r.comp.st === 'pass', d: r.comp ? (r.comp.st === 'pass' ? 'ผ่าน' : r.comp.st === 'pend' ? 'รอผล' : 'ยังไม่สอบ') : '–' }];
 }
 function elLightsHtml(r, big) { return `<span class="el-lights${big ? ' big' : ''}">${elLights(r).map(l => `<span class="el-lt ${l.ok == null ? 'na' : l.ok ? 'g' : 'r'}" title="${esc(l.t + ': ' + l.d)}"><i></i>${big ? `<b>${esc(l.t)}</b><small>${esc(l.d)}</small>` : ''}</span>`).join('')}</span>`; }
@@ -5406,7 +5406,7 @@ async function elExportSum() {
 // ---- สอบภาษาอังกฤษ / สอบคอมพิวเตอร์ ----
 const TS = { data: null, k: 'eng', f: '', c: '', y: '', prog: '', q: '' };
 const TS_K = { eng: 'ภาษาอังกฤษ', comp: 'คอมพิวเตอร์' };
-const TS_ST = { pass: ['st-ok', 'สอบผ่านแล้ว'], taken: ['st-prob', 'สอบแล้ว · ยังไม่ผ่าน'], fail: ['st-prob', 'สอบแล้ว · ยังไม่ผ่าน'], pend: ['st-prob', 'สอบแล้ว · รอผล'], none: ['st-no', 'ยังไม่สอบ'], nodata: ['st-nodata', 'ไม่มีข้อมูล'] };
+const TS_ST = { pass: ['st-ok', 'สอบแล้ว · ผ่าน'], fail: ['st-prob', 'สอบแล้ว · ยังไม่ผ่าน'], pend: ['st-prob', 'สอบแล้ว · รอผล'], none: ['st-no', 'ยังไม่สอบ'], nodata: ['st-nodata', 'ไม่มีข้อมูล'] };
 /** กลุ่มสถานะ: done = สอบแล้ว (ทุกผล) · none = ยังไม่สอบ · nodata = ไม่มีข้อมูล */
 const tsG = st => st === 'none' ? 'none' : st === 'nodata' ? 'nodata' : 'done';
 const tsOf = (r, k) => r[k || TS.k] || {};
@@ -5439,7 +5439,7 @@ function tsDash(B0) {
 }
 function tsDetail(r, k) {
   const x = tsOf(r, k);
-  if ((k || TS.k) === 'eng') return x.score ? [x.test, x.score, x.result, x.date].filter(Boolean).join(' · ') + (x.n > 1 ? ' (สอบ ' + x.n + ' ครั้ง)' : '') : x.src === 'reg' && x.v ? 'ใบตรวจสอบจบ: ' + x.v : '';
+  if ((k || TS.k) === 'eng') return x.v ? 'ผลคะแนนภาษาอังกฤษ: ' + x.v : '';
   return x.st === 'none' || x.st === 'nodata' ? '' : [x.code, x.grade ? 'เกรด ' + x.grade : '', x.term ? 'ภาค ' + x.term : '', x.tries > 1 ? 'ประวัติ ' + x.hist : ''].filter(Boolean).join(' · ');
 }
 function tsBase() { return TS.data.rows.filter(r => (!TS.y || String(r.year) === TS.y) && (!TS.prog || r.program === TS.prog)); }
@@ -5458,7 +5458,6 @@ function tsRender() {
       <select id="tsY"><option value="">ทุกชั้นปี</option>${years.map(y => `<option value="${y}" ${String(y) === TS.y ? 'selected' : ''}>ชั้นปีที่ ${y}</option>`).join('')}</select>
       <select id="tsP"><option value="">ทุกกลุ่ม/หลักสูตร</option>${progs.map(p => `<option ${p === TS.prog ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>
       <div class="spacer"></div>
-      ${canW ? `<button class="btn" onclick="$('tsFile').click()"><i class="ico" data-i="upload"></i> นำเข้าผลสอบอังกฤษ</button><input type="file" id="tsFile" accept=".xlsx,.xls,.csv" hidden><button class="btn" onclick="tsTemplate()"><i class="ico" data-i="file-sheet"></i> แม่แบบ</button>` : ''}
       <button class="btn" onclick="elLoad()"><i class="ico" data-i="refresh"></i> โหลดใหม่</button>
     </div>
     ${tsDash(B0)}
@@ -5483,19 +5482,18 @@ function tsRender() {
   $('tsP').onchange = e => { TS.prog = e.target.value; TS.page = 0; tsRender(); };
   $('elQ').oninput = e => { TS.q = e.target.value; TS.page = 0; const pos = e.target.selectionStart; tsRender(); $('elQ').focus(); $('elQ').setSelectionRange(pos, pos); };
   document.querySelectorAll('[data-elv]').forEach(b => b.onclick = () => openProfile(b.dataset.elv));
-  if ($('tsFile')) $('tsFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) tsImport(f); };
 }
 function tsScopeTxt(base) { return [TS.y ? 'ชั้นปีที่ ' + TS.y : 'ทุกชั้นปี', TS.prog || 'ทุกกลุ่ม', base ? '' : TS.c ? TS_C[TS.c][0] : '', base ? '' : TS.f ? { done: 'สอบแล้ว', pass: 'สอบผ่านแล้ว', notpass: 'สอบแล้ว ยังไม่ผ่าน', none: 'ยังไม่สอบ', nodata: 'ไม่มีข้อมูล' }[TS.f] : ''].filter(Boolean).join(' · '); }
 async function tsExport(both) {
   const T = s => TS_ST[s][1], R = both ? tsBase().filter(r => (!TS.c || TS_C[TS.c][1](r)) && (!TS.q || (r.id + ' ' + r.name + ' ' + r.advisor).toLowerCase().includes(TS.q.toLowerCase()))).sort((a, b) => (Number(a.year) || 9) - (Number(b.year) || 9) || a.id.localeCompare(b.id)) : tsRows();
   const title = both ? 'สถานะสอบภาษาอังกฤษและสอบคอมพิวเตอร์' : 'สถานะสอบ' + TS_K[TS.k], sc = tsScopeTxt();
   const head = ['ที่', 'รหัสนักศึกษา', 'ชื่อ-สกุล', 'ชั้นปี', 'หลักสูตร', 'สาขาเน้น', 'อาจารย์ที่ปรึกษา'];
-  const cE = ['ภาษาอังกฤษ', 'ประเภทการสอบ', 'คะแนน', 'ผลสอบ', 'วันที่สอบ', 'ใบตรวจสอบจบ (อังกฤษ)'], cC = ['คอมพิวเตอร์', 'รหัสวิชา', 'เกรด', 'ภาค/ปีที่สอบ', 'ประวัติเกรด'];
-  const vE = r => { const e = r.eng || {}; return [T(e.st), e.test || '', e.score || '', e.result || '', e.date || '', e.v || '']; }, vC = r => { const c = r.comp || {}; return [T(c.st), c.st === 'none' || c.st === 'nodata' ? '' : c.code || '', c.grade || '', c.term || '', c.hist || '']; };
+  const cE = ['ภาษาอังกฤษ', 'ผลคะแนนภาษาอังกฤษ (REG)'], cC = ['คอมพิวเตอร์', 'รหัสวิชา', 'เกรด', 'ภาค/ปีที่สอบ', 'ประวัติเกรด'];
+  const vE = r => { const e = r.eng || {}; return [T(e.st), e.v || '']; }, vC = r => { const c = r.comp || {}; return [T(c.st), c.st === 'none' || c.st === 'nodata' ? '' : c.code || '', c.grade || '', c.term || '', c.hist || '']; };
   const k = both ? null : TS.k, cols = k === 'eng' ? cE : k === 'comp' ? cC : cE.concat(cC);
   return { title: title + ' — ' + sc, sub: 'ข้อมูล ณ ' + new Date().toLocaleDateString('th-TH') + ' · นักศึกษาสถานะกำลังศึกษา', file: title.replace(/\s+/g, '_') + (TS.y ? '_ปี' + TS.y : ''), sheet: both ? 'อังกฤษ-คอม' : TS_K[TS.k],
     headers: head.concat(cols, ['สรุป 2 ส่วน', 'วันที่ไฟล์ REG']),
-    defaultCols: head.filter(h => h !== 'สาขาเน้น').concat(k === 'eng' ? ['ภาษาอังกฤษ', 'ประเภทการสอบ', 'คะแนน', 'วันที่สอบ'] : k === 'comp' ? ['คอมพิวเตอร์', 'รหัสวิชา', 'เกรด', 'ภาค/ปีที่สอบ'] : ['ภาษาอังกฤษ', 'คะแนน', 'คอมพิวเตอร์', 'เกรด', 'สรุป 2 ส่วน']),
+    defaultCols: head.filter(h => h !== 'สาขาเน้น').concat(k === 'eng' ? ['ภาษาอังกฤษ', 'ผลคะแนนภาษาอังกฤษ (REG)'] : k === 'comp' ? ['คอมพิวเตอร์', 'รหัสวิชา', 'เกรด', 'ภาค/ปีที่สอบ'] : ['ภาษาอังกฤษ', 'คอมพิวเตอร์', 'เกรด', 'สรุป 2 ส่วน']),
     rows: R.map((r, i) => [i + 1, r.id, r.name, r.year, r.program, r.major || '', r.advisor].concat(k === 'eng' ? vE(r) : k === 'comp' ? vC(r) : vE(r).concat(vC(r)), [TS_BOTH[tsBoth(r)], r.reg || ''])) };
 }
 /** ส่งออกตัวเลขสรุป (แยกชั้นปี · กลุ่ม · ชั้นปี×กลุ่ม) ตามตัวกรองชั้นปี/กลุ่มที่เลือก — นำไปทำ Pivot/กราฟต่อได้ */
@@ -5511,31 +5509,6 @@ async function tsExportSum() {
   return { title: t + ' — ' + tsScopeTxt(true), sub: 'ข้อมูล ณ ' + new Date().toLocaleDateString('th-TH') + ' · นักศึกษาสถานะกำลังศึกษา · % คิดจากจำนวนนักศึกษาในกลุ่ม', file: t.replace(/\s+/g, '_') + (TS.y ? '_ปี' + TS.y : ''), sheet: 'สรุป',
     headers: ['มิติ', 'กลุ่ม', 'นักศึกษา', 'สอบครบ 2 ส่วน', 'สอบครบ 2 ส่วน (%)', 'อังกฤษ สอบแล้ว', 'อังกฤษ ยังไม่สอบ', 'อังกฤษ ไม่มีข้อมูล', 'อังกฤษ สอบแล้ว (%)', 'คอม สอบแล้ว', 'คอม ยังไม่สอบ', 'คอม ไม่มีข้อมูล', 'คอม สอบแล้ว (%)', 'สอบแล้ว 1 ส่วน', 'ยังไม่สอบทั้ง 2 ส่วน', 'ไม่มีข้อมูลทั้ง 2 ส่วน'], rows };
 }
-async function tsTemplate() {
-  if (!await LIB.need('xlsx')) return toast('โหลดตัวสร้าง Excel ไม่สำเร็จ');
-  const h = ['รหัสนักศึกษา', 'ชื่อ-สกุล', 'ประเภทการสอบ', 'คะแนน', 'ผล', 'วันที่สอบ', 'หมายเหตุ'];
-  const ws = XLSX.utils.aoa_to_sheet([h, ['663150999-9', 'นางสาวตัวอย่าง ทดสอบ', 'KKU-AELE', 65, 'ผ่าน', '15/10/2569', 'ช่อง ผล ใส่ ผ่าน/PASS หรือ ไม่ผ่าน/FAIL · ชื่อ-สกุลไม่บังคับ']]);
-  ws['!cols'] = h.map(k => ({ wch: Math.max(14, k.length + 6) }));
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'ผลสอบอังกฤษ'); xlsxSave(wb, 'แม่แบบ_ผลสอบภาษาอังกฤษ.xlsx');
-}
-async function tsImport(file) {
-  let rows;
-  try {
-    const wb = await readBook(file), raw = sheetRows(wb.Sheets[wb.SheetNames[0]]);
-    const pick = (o, re) => { const k = Object.keys(o).find(x => re.test(String(x).trim())); return k ? String(o[k]).trim() : ''; };
-    rows = raw.map(o => ({ id: pick(o, /รหัส(นักศึกษา|นศ)?$|student.?id|^id$/i), test: pick(o, /ประเภท|ชื่อการสอบ|แบบทดสอบ|^test/i), score: pick(o, /คะแนน|score/i), result: pick(o, /^ผล|result|สถานะ/i), date: pick(o, /วันที่|date/i), note: pick(o, /หมายเหตุ|note/i) }))
-      .filter(x => /\d{6,}/.test(x.id.replace(/\D/g, '')) );
-  } catch (e) { return UX.alert({ icon: 'error', title: 'อ่านไฟล์ไม่สำเร็จ', text: String(e.message || e) }); }
-  if (!rows.length) return UX.alert({ icon: 'error', title: 'ไม่พบข้อมูล', text: 'ต้องมีคอลัมน์ "รหัสนักศึกษา" และ "คะแนน" หรือ "ผล" — ดาวน์โหลดแม่แบบเพื่อดูรูปแบบ' });
-  const noRes = rows.filter(x => !x.result).length, isAdm = ['owner', 'admin'].includes(ME.role);
-  const msg = `พบ ${rows.length} รายการ จาก ${new Set(rows.map(x => x.id)).size} คน` + (noRes ? `\n${noRes} รายการไม่มีช่อง “ผล” → นับเป็น สอบแล้ว · ยังไม่ผ่าน` : '') + '\nรายการเดิม (รหัส + ประเภท + วันที่ เดียวกัน) จะถูกอัปเดต';
-  if (!await ask(msg)) return;
-  const replace = isAdm && TS.data && TS.data.engN ? await ask('แทนที่ผลสอบอังกฤษที่นำเข้าไว้ทั้งหมด?\nตกลง = ลบของเดิมแล้วใช้ไฟล์นี้ · ยกเลิก = เพิ่ม/อัปเดตต่อจากของเดิม') : false;
-  UX.loading('กำลังนำเข้าผลสอบ…'); const r = await call('adminEngImport', rows, replace).catch(() => null); UX.close(); if (!r) return;
-  UX.alert({ icon: 'success', title: 'นำเข้าเรียบร้อย', text: `เพิ่ม ${r.add} · อัปเดต ${r.upd} · รวม ${r.total} รายการ` + (r.unkN ? `\nไม่พบรหัสในฐานข้อมูล ${r.unkN} รายการ: ${r.unknown.slice(0, 10).join(', ')}${r.unkN > 10 ? '…' : ''}` : '') });
-  elLoad();
-}
-
 // ---- สถานภาพ ----
 const PB_ST = { 'ปกติ': 'st-ok', 'รอพินิจ': 'st-prob', 'เข้าเกณฑ์พ้นสภาพ': 'st-dis' };
 function probRows() { const q = EL.q.toLowerCase(); return EL.data.rows.filter(r => (EL.filter ? r.status === EL.filter : r.status !== 'ปกติ') && (!q || (r.id + ' ' + r.name + ' ' + r.advisor).toLowerCase().includes(q))); }

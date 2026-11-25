@@ -17,7 +17,6 @@ const SH = {
   SETTINGS: 'ตั้งค่า',
   COURSES: 'รายวิชา',
   GRADCHK: 'สรุปตรวจสอบจบ',
-  ENGTEST: 'ผลสอบภาษาอังกฤษ',
   ADVISORS: 'อาจารย์ที่ปรึกษา',
   REPORTLOG: 'ประวัติส่งรายงาน',
   ACCESS: 'บันทึกการเข้าใช้',
@@ -64,7 +63,6 @@ const ACCESS_HEADERS = ['เวลา', 'อีเมล', 'ชื่อ', 'เ�
 const LOG_HEADERS = ['เวลา', 'ผู้ใช้', 'การกระทำ', 'รหัสนักศึกษา', 'รายละเอียด'];
 const FILE_HEADERS = ['เวลา', 'รหัสนักศึกษา', 'ประเภท', 'ชื่อไฟล์', 'FileId', 'URL', 'ผู้อัปโหลด'];
 const COURSE_HEADERS = ['รหัสนักศึกษา', 'หมวด', 'รหัสวิชา', 'ชื่อวิชา', 'หน่วยกิต', 'ครั้งที่', 'ภาคการศึกษา', 'ปีการศึกษา', 'เกรด', 'เกรดล่าสุด', 'อัปเดตเมื่อ'];
-const ENG_HEADERS = ['รหัสนักศึกษา', 'ประเภทการสอบ', 'คะแนน', 'ผล', 'วันที่สอบ', 'หมายเหตุ', 'นำเข้าโดย', 'นำเข้าเมื่อ'];
 const GRADCHK_HEADERS = ['รหัสนักศึกษา', 'ชื่อในไฟล์', 'ชั้นปีในไฟล์', 'รหัสหลักสูตร', 'หลักสูตร', 'หน่วยกิตต้องผ่าน', 'หน่วยกิตที่ลง', 'หน่วยกิตผ่าน', 'ขาด', 'GPAX', 'ภาษาอังกฤษ', 'รอเกรด (วิชา)', 'ผลตรวจ REG', 'หมวดไม่ผ่าน', 'สถานะหมวด (JSON)', 'วันที่รายงาน REG', 'ไฟล์', 'อัปโหลดเมื่อ', 'ผู้อัปโหลด', 'ข้อมูล ณ ภาค'];
 const ADVISOR_HEADERS = ['ชื่ออาจารย์ที่ปรึกษา', 'อีเมล', 'หมายเหตุ', 'สาขาวิชา'];
 const REPORTLOG_HEADERS = ['เวลา', 'ภาคการศึกษา', 'อาจารย์ที่ปรึกษา', 'อีเมล', 'จำนวนต่ำกว่าเกณฑ์', 'จำนวนเฝ้าระวัง', 'สถานะ', 'ผู้ส่ง'];
@@ -2358,35 +2356,14 @@ function adminProbation(token, termKey) {
   return { cfg: c, types: ACAD_TYPES, rows, term: termKey ? termLabel_(termKey) : '' };
 }
 // ======================= ผลสอบภาษาอังกฤษ / สอบคอมพิวเตอร์ =======================
-/** ผลสอบภาษาอังกฤษที่นำเข้า (ชีต "ผลสอบภาษาอังกฤษ") → { id: [ {test, score, result, date, pass} ] } */
-function engMap_() {
-  return memo_('engm', () => {
-    const out = {}, sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SH.ENGTEST);
-    if (!sh || sh.getLastRow() < 2) return out;
-    sh.getRange(2, 1, sh.getLastRow() - 1, ENG_HEADERS.length).getValues().map(r => r.map(engStr_)).forEach(r => {
-      const id = normId_(r[0]); if (!id) return;
-      const res = String(r[3] || '').trim();
-      (out[id] = out[id] || []).push({ test: String(r[1] || '').trim(), score: String(r[2] || '').trim(), result: res, date: String(r[4] || '').trim(), note: String(r[5] || '').trim(), pass: /^(pass|ผ่าน|p|s)$/i.test(res) });
-    });
-    return out;
-  });
-}
-const engStr_ = v => v instanceof Date ? Utilities.formatDate(v, 'Asia/Bangkok', 'dd/MM/yyyy') : String(v == null ? '' : v).trim();
-/** สถานะภาษาอังกฤษของ 1 คน: pass (ผ่าน) · taken (สอบแล้ว ยังไม่ผ่าน) · none (ยังไม่สอบ) · nodata (ไม่มีไฟล์ REG และไม่มีผลที่นำเข้า)
- *  ใช้ผลที่นำเข้า (ถ้ามี) ร่วมกับช่อง "ภาษาอังกฤษ" ในใบตรวจสอบจบ (PASS = ผ่าน · FAIL/ว่าง = ยังไม่สอบ) */
+/** สถานะภาษาอังกฤษของ 1 คน จากช่อง "ภาษาอังกฤษ" (ผลคะแนนภาษาอังกฤษ) ในใบตรวจสอบจบ REG
+ *  PASS = สอบแล้ว/ผ่าน · FAIL หรือว่าง = ยังไม่สอบ · ไม่มีไฟล์ REG = ไม่มีข้อมูล */
 function engOf_(id, g) {
-  const L = (id && engMap_()[id]) || [], p = L.filter(x => x.pass).pop(), last = L[L.length - 1], reg = String((g && g.english) || '').trim();
-  const pick = x => x ? { test: x.test, score: x.score, result: x.result, date: x.date, n: L.length } : { n: 0 };
-  if (p) return Object.assign({ st: 'pass', v: reg, src: 'score' }, pick(p));
-  if (/^PASS$/i.test(reg)) return Object.assign({ st: 'pass', v: reg, src: 'reg' }, pick(last));
-  if (last) return Object.assign({ st: 'taken', v: reg, src: 'score' }, pick(last));
-  return { st: g ? 'none' : 'nodata', v: reg, src: 'reg', n: 0 };
+  const v = String((g && g.english) || '').trim();
+  return { st: !g ? 'nodata' : /^PASS$/i.test(v) ? 'pass' : 'none', v };
 }
 function engTxt_(e) {
-  const sc = e.score ? (e.test ? e.test + ' ' : '') + e.score + (e.date ? ' · ' + e.date : '') : '';
-  return e.st === 'pass' ? 'สอบแล้ว · ผ่าน' + (sc ? ' (' + sc + ')' : e.src === 'reg' ? ' (ใบตรวจสอบจบ: PASS)' : '')
-    : e.st === 'taken' ? 'สอบแล้ว · ยังไม่ผ่าน' + (sc ? ' (' + sc + (e.result ? ' ' + e.result : '') + ')' : '')
-    : e.st === 'nodata' ? 'ยังไม่มีข้อมูล (ไม่มีไฟล์ตรวจสอบจบ/ผลสอบ)' : 'ยังไม่สอบ' + (e.v ? ' (ใบตรวจสอบจบ: ' + e.v + ')' : '');
+  return e.st === 'pass' ? 'สอบแล้ว · ผลคะแนนภาษาอังกฤษ PASS' : e.st === 'nodata' ? 'ยังไม่มีไฟล์ตรวจสอบจบ' : 'ยังไม่สอบ' + (e.v ? ' (ผลคะแนนภาษาอังกฤษ: ' + e.v + ')' : '');
 }
 /** รหัสวิชาสอบคอมพิวเตอร์ (จากเงื่อนไข "สอบคอมพิวเตอร์ผ่าน" ที่ตั้งไว้ · ค่าเริ่มต้น 000160) */
 function compCodes_() {
@@ -2406,33 +2383,7 @@ function adminTestStatus(token) {
       rows.push({ id, name: String(r[H['คำนำหน้า']] || '') + r[H['ชื่อ']] + ' ' + r[H['นามสกุล']], year: Number(r[H['ชั้นปี']]) || '', program: progLabel_(r, H),
         major: H['สาขาเน้น'] !== undefined ? String(r[H['สาขาเน้น']] || '').trim() : '', advisor: normAdv_(r[H['อาจารย์ที่ปรึกษา']]), reg: g ? g.date : '', eng: X.eng, comp });
     });
-    return { rows, codes, engN: Object.keys(engMap_()).length };
-  });
-}
-/** นำเข้าผลสอบภาษาอังกฤษ · rows: [{id, test, score, result, date, note}] · replace = true: ลบของเดิมทั้งหมดก่อน (เฉพาะผู้ดูแล) */
-function adminEngImport(token, rows, replace) {
-  const s = authW_(token); tabGuard_(s, 'pElig');
-  if (replace && ADMIN_ROLES.indexOf(s.role) < 0) throw new Error('การแทนที่ทั้งหมดใช้ได้เฉพาะผู้ดูแลระบบ');
-  rows = (rows || []).filter(x => x && normId_(x.id)).slice(0, 5000);
-  if (!rows.length) throw new Error('ไม่พบข้อมูล (ต้องมีคอลัมน์ รหัสนักศึกษา)');
-  return withLock_(() => {
-    const sh = ensureSheetLazy_(SH.ENGTEST, ENG_HEADERS), known = {}, now = new Date();
-    readTable_(SH.STUDENTS).rows.forEach(r => known[normId_(r[0])] = 1);
-    let old = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, ENG_HEADERS.length).getValues().map(r => r.map((v, j) => j < 6 ? engStr_(v) : v)) : [];
-    if (replace) old = [];
-    const key = x => [x[0], x[1], x[4]].map(v => String(v).trim().toLowerCase()).join('|'), at = {};
-    old.forEach((x, i) => at[key(x)] = i);
-    let add = 0, upd = 0; const unk = [];
-    rows.forEach(x => {
-      const id = normId_(x.id), row = [id, safe_(String(x.test || '').slice(0, 60)), safe_(String(x.score == null ? '' : x.score).slice(0, 30)), safe_(String(x.result || '').slice(0, 30)), safe_(String(x.date || '').slice(0, 30)), safe_(String(x.note || '').slice(0, 200)), s.u, now];
-      if (!known[id]) unk.push(id);
-      const k = key(row); if (at[k] !== undefined) { old[at[k]] = row; upd++; } else { at[k] = old.length; old.push(row); add++; }
-    });
-    if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, ENG_HEADERS.length).clearContent();
-    if (old.length) { sh.getRange(2, 1, old.length, 6).setNumberFormat('@'); sh.getRange(2, 1, old.length, ENG_HEADERS.length).setValues(old); }
-    delete MEMO_.engm;
-    log_(s.u, 'นำเข้าผลสอบภาษาอังกฤษ', '', (replace ? 'แทนที่ทั้งหมด · ' : '') + 'เพิ่ม ' + add + ' · อัปเดต ' + upd + (unk.length ? ' · ไม่พบรหัส ' + unk.length : ''));
-    return { add, upd, unknown: unk.slice(0, 50), unkN: unk.length, total: old.length };
+    return { rows, codes };
   });
 }
 function adminSaveProbCfg(token, o) {   // รูปแบบเดิม (ยังรองรับ) → แปลงเป็นเกณฑ์รวม
