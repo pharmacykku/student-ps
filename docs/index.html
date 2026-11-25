@@ -14,14 +14,18 @@
 <body>
 <!-- แก้ลิงก์ด้านล่างเป็นลิงก์ /exec ของ Web app (Deploy → Manage deployments) -->
 <script>
-  const APP = 'https://script.google.com/macros/s/ใส่-DEPLOYMENT-ID/exec';
+  const APP = 'https://script.google.com/macros/s/AKfycbw1W4njqOXd6Fern8IF2lorLvGInIQ_1OjtU5jXiOKj6JTznE9URlnGTBrI_Evi-flN3Q/exec';
   // ?admin หรือ #admin = หน้าเจ้าหน้าที่ · ไม่มี = Dashboard
   const admin = /admin/.test(location.search + location.hash);
   const url = APP + (admin ? '?page=admin' : '');
   document.write('<iframe src="' + url + '" allow="clipboard-write" title="ระบบฐานข้อมูลนักศึกษา"></iframe>');
 </script>
 <div class="fb" id="fb"><div><b>เปิดระบบไม่ได้ในหน้านี้</b><br>กดปุ่มด้านล่างเพื่อเปิดระบบโดยตรง<br><a id="go" href="#">เปิดระบบฐานข้อมูลนักศึกษา</a></div></div>
-<script>document.getElementById('go').href = url;</script>
+<script>document.getElementById('go').href = url;
+  // ถ้าเบราว์เซอร์ไม่ยอมแสดงในกรอบ ผู้ใช้ยังกดเปิดตรงได้จากลิงก์มุมขวาล่าง
+  const a = document.createElement('a'); a.href = url; a.target = '_top'; a.textContent = 'เปิดหน้าต่างเต็ม ↗';
+  a.style.cssText = 'position:fixed;right:10px;bottom:10px;z-index:5;font-size:12px;background:rgba(255,255,255,.85);color:#4a5a14;padding:4px 10px;border-radius:999px;text-decoration:none;border:1px solid #d6dbc4';
+  document.body.appendChild(a);</script>
 <noscript><a href="https://script.google.com/">เปิดระบบ</a></noscript>
 </body>
 </html>
