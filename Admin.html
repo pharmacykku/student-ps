@@ -825,7 +825,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
         <div class="row" style="justify-content:space-between;font-size:14px"><span class="muted" style="font-size:13px"><i class="ico" data-i="alarm"></i> รหัสมีอายุ 10 นาที</span><a href="#" id="otpResend">ขอรหัสใหม่</a></div>
       </form>
       <div id="loginErr" class="lg-err" role="alert"></div>
-      <div style="text-align:center;margin-top:12px"><a href="<?= appUrl ?>" target="_top" style="font-size:14px">← กลับหน้า Dashboard</a></div>
+      <div style="text-align:center;margin-top:12px"><a href="<?= pubDash ?>" target="_top" style="font-size:14px">← กลับหน้า Dashboard</a></div>
       </div>
       <div class="lg-consent" id="lgConsent" hidden>
         <div class="lc-logo"><div class="logo logo-img" role="img" aria-label="โลโก้คณะเภสัชศาสตร์ มหาวิทยาลัยขอนแก่น"></div></div>
@@ -893,7 +893,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
   </nav>
   <div class="side-foot">
     <div class="side-me" title="บัญชีที่เข้าสู่ระบบ"><span class="av" id="sideAv">A</span><div class="side-me-t"><b id="sideName">ผู้ดูแลระบบ</b><small id="sideRole"></small></div></div>
-    <a class="side-act dash" href="<?= appUrl ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
+    <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
   <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู</span></button>
@@ -1279,6 +1279,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
           <label class="f" style="grid-column:span 2">ชื่อหน่วยงาน<input id="sFac"></label>
           <label class="f" style="grid-column:span 2">Google Drive Folder ID<input id="sDrive"></label>
           <label class="f" style="grid-column:span 2">URL ของเว็บแอป <span class="muted">(ไม่บังคับ) วางลิงก์ Web app จาก Deploy → Manage deployments · ใช้กับปุ่ม “ผู้ดูแลระบบ” “รายละเอียดข้อมูลเชิงลึก” และอีเมลเชิญ</span><input id="sApp" placeholder="https://script.google.com/a/macros/kku.ac.th/s/…/exec"><span class="muted" style="font-size:12px" id="sAppNow"></span></label>
+          <label class="f" style="grid-column:span 2">ลิงก์หน้าทางเข้า <span class="muted">(GitHub Pages) ใช้ในอีเมลและปุ่มลิงก์ที่ส่งให้ผู้ใช้ · เว้นว่าง = ใช้ลิงก์ Web app</span><input id="sPub" placeholder="https://pharmacykku.github.io/student-ps/"></label>
           <label class="f" style="grid-column:span 2">สำเนาอีเมลรายงานสิ้นภาค (CC) <span class="muted">คั่นด้วย , เช่น อีเมลงานบริการการศึกษา</span><input id="sCc" placeholder="academic@kku.ac.th"></label>
           <div style="grid-column:span 2"><button class="btn primary">บันทึก</button></div>
         </form>
@@ -3331,10 +3332,10 @@ function palInit() {
     b.onclick = async () => { if (b.dataset.pal === document.documentElement.dataset.pal) return; const t = await call('adminSetTheme', b.dataset.pal).catch(() => null); if (!t) return;
       document.documentElement.dataset.pal = t; B.settings.UI_THEME = t; palInit(); toast('เปลี่ยนธีมสีแล้ว · กราฟจะอัปเดตเมื่อรีเฟรชหน้า'); }; });
 }
-function fillSettings() { palInit(); const s = B.settings; $('sTh').value = s.GPAX_THRESHOLD; $('sW').value = s.GPAX_WATCH; $('sFac').value = s.FACULTY_NAME || ''; $('sDrive').value = s.DRIVE_FOLDER_ID || ''; $('sCc').value = s.REPORT_CC || ''; $('sApp').value = s.APP_URL || ''; $('sAppNow').textContent = 'ที่ใช้อยู่ตอนนี้: ' + (s.APP_URL_AUTO || '–'); }
+function fillSettings() { palInit(); const s = B.settings; if ($('sPub')) $('sPub').value = s.PUBLIC_URL || ''; $('sTh').value = s.GPAX_THRESHOLD; $('sW').value = s.GPAX_WATCH; $('sFac').value = s.FACULTY_NAME || ''; $('sDrive').value = s.DRIVE_FOLDER_ID || ''; $('sCc').value = s.REPORT_CC || ''; $('sApp').value = s.APP_URL || ''; $('sAppNow').textContent = 'ที่ใช้อยู่ตอนนี้: ' + (s.APP_URL_AUTO || '–'); }
 $('setForm').onsubmit = async e => {
   e.preventDefault();
-  const s = await call('adminSaveSettings', { GPAX_THRESHOLD: $('sTh').value, GPAX_WATCH: $('sW').value, FACULTY_NAME: $('sFac').value, DRIVE_FOLDER_ID: $('sDrive').value.trim(), REPORT_CC: $('sCc').value.trim(), APP_URL: $('sApp').value.trim() });
+  const s = await call('adminSaveSettings', { GPAX_THRESHOLD: $('sTh').value, GPAX_WATCH: $('sW').value, FACULTY_NAME: $('sFac').value, DRIVE_FOLDER_ID: $('sDrive').value.trim(), REPORT_CC: $('sCc').value.trim(), APP_URL: $('sApp').value.trim(), PUBLIC_URL: $('sPub').value.trim() });
   Object.assign(B.settings, s); applyFilter(); renderRisk(); toast('บันทึกการตั้งค่าแล้ว');
 };
 async function doBackup() { $('backupMsg').textContent = 'กำลังสำรอง…'; const u = await call('adminBackup').catch(() => null); $('backupMsg').innerHTML = u ? `<i class="ico" data-i="check-circle"></i> <a href="${esc(u)}" target="_blank" rel="noopener">เปิดไฟล์สำรอง</a>` : ''; }

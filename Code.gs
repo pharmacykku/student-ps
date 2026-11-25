@@ -131,7 +131,7 @@ function doPost(e) {
 function doGet(e) {
   const page = (e && e.parameter && e.parameter.page) === 'admin' ? 'Admin' : 'Index';
   const t = HtmlService.createTemplateFromFile(page);
-  t.appUrl = appUrl_();
+  t.appUrl = appUrl_(); t.pubDash = pubLink_(false); t.pubAdmin = pubLink_(true);
   t.tab = String((e && e.parameter && e.parameter.tab) || '').replace(/[^a-z]/gi, '');
   t.sid = String((e && e.parameter && e.parameter.sid) || '').replace(/[^\d-]/g, '').slice(0, 12);
   t.pal = uiTheme_();
@@ -164,6 +164,15 @@ function appUrl_() {
   return norm(ScriptApp.getService().getUrl());
 }
 
+/** ลิงก์สำหรับส่งให้ผู้ใช้ (อีเมล/ปุ่มในระบบ) — ถ้าตั้ง "ลิงก์หน้าทางเข้า" (PUBLIC_URL เช่น GitHub Pages) ใช้ลิงก์นั้น
+ *  pubLink_(true, '&tab=req') → https://pharmacykku.github.io/student-ps/?admin&tab=req */
+const PUBLIC_URL_DEF = 'https://pharmacykku.github.io/student-ps/';
+function pubBase_() { const v = getSettings_().PUBLIC_URL; const u = String(v === undefined ? PUBLIC_URL_DEF : v).trim(); return /^https:\/\/[^\s?#]+$/.test(u) ? u : ''; }
+function pubLink_(admin, extra) {
+  const b = pubBase_(), x = String(extra || '').replace(/^[?&]/, '');
+  if (b) return b + (admin ? '?admin' + (x ? '&' + x : '') : (x ? '?' + x : ''));
+  return appUrl_() + (admin ? '?page=admin' + (x ? '&' + x : '') : (x ? '?' + x : ''));
+}
 function include(name) {
   return HtmlService.createHtmlOutputFromFile(name).getContent();
 }
@@ -710,7 +719,7 @@ function adminSaveUser(token, user) {
       if (user.notify !== false) {
         try {
           const faculty = getSettings_().FACULTY_NAME || DEFAULT_SETTINGS.FACULTY_NAME;
-          const url = appUrl_() + '?page=admin';
+          const url = pubLink_(true);
           MailApp.sendEmail({ to: email, name: 'ระบบฐานข้อมูลนักศึกษา ' + faculty, subject: 'คุณได้รับสิทธิ์เข้าใช้ระบบฐานข้อมูลนักศึกษา ' + faculty,
             htmlBody: `<div style="font-family:Sarabun,Tahoma,sans-serif;line-height:1.6">เรียน ${user.name || email}<br><br>${s.name} ได้เพิ่มคุณเป็นผู้ใช้ระบบฐานข้อมูลนักศึกษา ${faculty} สิทธิ์: <b>${roleName_(user.role)}</b><br>
             เข้าใช้งานได้ที่ <a href="${url}">${url}</a> โดยกรอกอีเมลนี้ ระบบจะส่งรหัส OTP มาทางอีเมลทุกครั้งที่เข้าสู่ระบบ</div>` });
@@ -792,7 +801,7 @@ function adminBootstrap(token) {
     terms: [...new Set(Object.keys(termCount).map(Number).concat(dataTerms_()))].sort((a, b) => b - a).map(k => ({ key: k, label: termLabel_(k), n: termCount[k] || 0, data: dataTerms_().indexOf(k) >= 0 })),
     curTerm: curTerm_(), dataTerms: dataTerms_(), snapTerms: Object.keys(termSnaps_()).map(Number),
     closedTerms: closedTerms_(),
-    settings: { ADV_PORTAL: advPortalOn_() ? 'on' : 'off', WB_BANDS: wbBands_(), LEVELS: acadLevels_(), ACAD: acadRules_(), ACAD_TYPES: ACAD_TYPES, UI_THEME: uiTheme_(), APP_URL: set.APP_URL || '', APP_URL_AUTO: appUrl_(), GPAX_THRESHOLD: set.GPAX_THRESHOLD, GPAX_WATCH: set.GPAX_WATCH, FACULTY_NAME: set.FACULTY_NAME, DRIVE_FOLDER_ID: set.DRIVE_FOLDER_ID, REPORT_CC: set.REPORT_CC || '', MASK_CONTACT: set.MASK_CONTACT || 'on', IDLE_MIN: set.IDLE_MIN || '30', GRAD_GPAX: set.GRAD_GPAX || '2.00', PROB_DISMISS: set.PROB_DISMISS || '1.50', PROB_LOW: set.PROB_LOW || '2.00', PROB_START_TERM: set.PROB_START_TERM || '2', PROB_CONSEC: set.PROB_CONSEC || '2' },
+    settings: { ADV_PORTAL: advPortalOn_() ? 'on' : 'off', WB_BANDS: wbBands_(), LEVELS: acadLevels_(), ACAD: acadRules_(), ACAD_TYPES: ACAD_TYPES, UI_THEME: uiTheme_(), APP_URL: set.APP_URL || '', PUBLIC_URL: pubBase_(), APP_URL_AUTO: appUrl_(), GPAX_THRESHOLD: set.GPAX_THRESHOLD, GPAX_WATCH: set.GPAX_WATCH, FACULTY_NAME: set.FACULTY_NAME, DRIVE_FOLDER_ID: set.DRIVE_FOLDER_ID, REPORT_CC: set.REPORT_CC || '', MASK_CONTACT: set.MASK_CONTACT || 'on', IDLE_MIN: set.IDLE_MIN || '30', GRAD_GPAX: set.GRAD_GPAX || '2.00', PROB_DISMISS: set.PROB_DISMISS || '1.50', PROB_LOW: set.PROB_LOW || '2.00', PROB_START_TERM: set.PROB_START_TERM || '2', PROB_CONSEC: set.PROB_CONSEC || '2' },
     gradChecked: gradCheckIndex_(), advDept: (() => { const AI = advisorInfo_(), o = {}; Object.keys(AI).forEach(n => { if (AI[n].dept) o[n] = AI[n].dept; }); return o; })(), advDepts: advDepts_(),
     driveUrl: set.DRIVE_FOLDER_ID ? 'https://drive.google.com/drive/folders/' + set.DRIVE_FOLDER_ID : '' };
   });
@@ -1229,6 +1238,11 @@ function adminSaveSettings(token, obj) {
     setSetting_('GPAX_WATCH', w.toFixed(2));
     if (obj.FACULTY_NAME) setSetting_('FACULTY_NAME', String(obj.FACULTY_NAME));
     if (obj.REPORT_CC !== undefined) setSetting_('REPORT_CC', String(obj.REPORT_CC).trim());
+    if (obj.PUBLIC_URL !== undefined) {
+      const u = String(obj.PUBLIC_URL).trim().replace(/[?#].*$/, '');
+      if (u && !/^https:\/\/[^\s]+$/.test(u)) throw new Error('ลิงก์หน้าทางเข้าต้องขึ้นต้นด้วย https://');
+      setSetting_('PUBLIC_URL', u ? (u.endsWith('/') || /\.html?$/.test(u) ? u : u + '/') : '');
+    }
     if (obj.APP_URL !== undefined) {
       const u = String(obj.APP_URL).trim().replace(/\?.*$/, '');
       if (u && !/^https:\/\/script\.google\.com\/.+\/(exec|dev)$/.test(u)) throw new Error('URL ของเว็บแอปต้องขึ้นต้นด้วย https://script.google.com/ และลงท้ายด้วย /exec');
@@ -3559,7 +3573,7 @@ function adminNotifyAdvisors(token, items, topic, msg, dry) {
     (by[a] = by[a] || []).push([id, String(r[H['คำนำหน้า']] || '') + r[H['ชื่อ']] + ' ' + r[H['นามสกุล']], r[H['ชั้นปี']], sum[id] ? Number(sum[id].gpax).toFixed(2) : '–', W[id]]); });
   const groups = Object.keys(by).sort((a, b) => a.localeCompare(b, 'th')).map(a => ({ advisor: a, email: map[a] || '', n: by[a].length }));
   if (dry) return { groups, total: items.length };
-  const faculty = getSettings_().FACULTY_NAME || DEFAULT_SETTINGS.FACULTY_NAME, url = appUrl_() + '?page=admin';
+  const faculty = getSettings_().FACULTY_NAME || DEFAULT_SETTINGS.FACULTY_NAME, url = pubLink_(true);
   let sent = 0; const skip = [];
   groups.forEach(g => {
     if (!g.email) { skip.push(g.advisor); return; }
@@ -4231,7 +4245,7 @@ function adminEligNotify(token, ids) {
       const html = '<div style="font-family:Sarabun,Tahoma,sans-serif;font-size:14px;color:#1e2a1b"><h3 style="color:#465216;margin:0 0 6px">ผลตรวจสิทธิ์เปลี่ยนแปลงหลังอัปโหลดไฟล์ตรวจสอบจบ</h3><p style="color:#56614d;margin:0 0 12px">อัปโหลดโดย ' + s.u + ' · ' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'd/M/yyyy HH:mm') + '</p>' +
         result.modes.filter(m => m.diff.length).map(m => '<h4 style="margin:14px 0 6px;color:#6b7b28">' + m.label + ' · เปลี่ยน ' + m.diff.length + ' คน</h4><table cellpadding="6" style="border-collapse:collapse;font-size:13px">' +
           m.diff.map(d => '<tr style="border-bottom:1px solid #dfe2d3"><td>' + d.id + '</td><td>' + d.name + '</td><td>' + (d.from !== d.to ? '<b style="color:' + (d.to === 'ok' ? '#3d8b3d' : '#b5413a') + '">' + L[d.from] + ' → ' + L[d.to] + '</b>' : '') + (d.fixed.length ? ' <span style="color:#3d8b3d">แก้ F แล้ว: ' + d.fixed.join(', ') + '</span>' : '') + (d.added.length ? ' <span style="color:#b5413a">F ใหม่: ' + d.added.join(', ') + '</span>' : '') + '</td></tr>').join('') + '</table>').join('') +
-        '<p style="margin-top:16px"><a href="' + appUrl_() + '?page=admin" style="background:#6b7b28;color:#fff;padding:8px 16px;border-radius:8px;text-decoration:none">เปิดระบบตรวจสิทธิ์</a></p></div>';
+        '<p style="margin-top:16px"><a href="' + pubLink_(true) + '" style="background:#6b7b28;color:#fff;padding:8px 16px;border-radius:8px;text-decoration:none">เปิดระบบตรวจสิทธิ์</a></p></div>';
       try { MailApp.sendEmail({ to: to.join(','), subject: '[ฐานข้อมูลนักศึกษา] ผลตรวจสิทธิ์เปลี่ยน ' + changes + ' รายการ', htmlBody: html, name: 'ฐานข้อมูลนักศึกษา เภสัชฯ มข.' }); result.emailed = to.join(', '); } catch (e) { result.emailError = e.message; }
     }
     log_(s.u, 'ตรวจการเปลี่ยนแปลงผลตรวจสิทธิ์', '', 'เปลี่ยน ' + changes + ' รายการ' + (result.emailed ? ' · แจ้ง ' + result.emailed : ''));
@@ -4475,7 +4489,7 @@ function reqSyncPage_(P) {
     const rows = R.rows.filter(r => r.res !== 'ซิงค์แล้วก่อนหน้า').slice(0, 200).map(r => '<tr><td>' + r.sid + '</td><td>' + esch_(r.name) + '</td><td>' + esch_(r.label) + '</td><td>' + r.term + '</td><td>' + r.res + '</td></tr>').join('');
     return page('ซิงค์คำร้อง REQ สำเร็จ', '<div>' + k('อ่านจาก REQ', items.length) + k('รายการใหม่', R.added) + k('ปรับสถานะแล้ว', R.applied) + k('รอยืนยัน', R.pending) + k('ไม่พบรหัสในระบบ', R.notFound) + '</div>'
       + (rows ? '<table><tr><th>รหัส</th><th>ชื่อ</th><th>คำร้อง</th><th>ภาค</th><th>ผล</th></tr>' + rows + '</table>' : '<p>ไม่มีคำร้องใหม่</p>')
-      + '<a class="b" href="' + appUrl_() + '?page=admin&tab=req" target="_top">เปิดระบบฐานข้อมูลนักศึกษา</a>', true);
+      + '<a class="b" href="' + pubLink_(true, 'tab=req') + '" target="_top">เปิดระบบฐานข้อมูลนักศึกษา</a>', true);
   } catch (err) { return page('เกิดข้อผิดพลาด', '<p>' + esch_(err.message || err) + '</p>'); }
 }
 /** แกนกลาง: ตรวจรหัส → ทำความสะอาดข้อมูล → บันทึก/ปรับสถานะ */

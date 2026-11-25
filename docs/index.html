@@ -16,8 +16,10 @@
 <script>
   const APP = 'https://script.google.com/macros/s/AKfycbw1W4njqOXd6Fern8IF2lorLvGInIQ_1OjtU5jXiOKj6JTznE9URlnGTBrI_Evi-flN3Q/exec';
   // ?admin หรือ #admin = หน้าเจ้าหน้าที่ · ไม่มี = Dashboard
-  const admin = /admin/.test(location.search + location.hash);
-  const url = APP + (admin ? '?page=admin' : '');
+  // ส่งต่อพารามิเตอร์ (tab, sid) ไปยังระบบ · ?admin หรือ #admin = หน้าเจ้าหน้าที่
+  const q = new URLSearchParams(location.search), admin = q.has('admin') || q.get('page') === 'admin' || /admin/.test(location.hash);
+  const p = new URLSearchParams(); if (admin) p.set('page', 'admin'); ['tab', 'sid'].forEach(k => { if (q.get(k)) p.set(k, q.get(k)); });
+  const url = APP + (p.toString() ? '?' + p.toString() : '');
   document.write('<iframe src="' + url + '" allow="clipboard-write" title="ระบบฐานข้อมูลนักศึกษา"></iframe>');
 </script>
 <div class="fb" id="fb"><div><b>เปิดระบบไม่ได้ในหน้านี้</b><br>กดปุ่มด้านล่างเพื่อเปิดระบบโดยตรง<br><a id="go" href="#">เปิดระบบฐานข้อมูลนักศึกษา</a></div></div>
