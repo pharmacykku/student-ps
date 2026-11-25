@@ -380,22 +380,34 @@ kbd{font:600 11px/1.6 'Sarabun',sans-serif;padding:0 6px;border-radius:6px;borde
 .tabs button span{overflow:hidden;text-overflow:ellipsis}
 .tabs button:hover{background:var(--brand-softer);color:var(--brand)}
 .tabs button.on{background:linear-gradient(135deg,var(--brand-2),var(--brand));color:#fff;font-weight:600;box-shadow:0 4px 12px color-mix(in srgb,var(--brand) 28%,transparent)}
-.sgrp{display:flex;flex-direction:column}.sgrp+.sgrp{margin-top:2px}
-.sgrp-h{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;font-family:'Prompt',sans-serif;font-weight:600;font-size:14px;color:var(--text);user-select:none;white-space:nowrap}
-.sgrp-h:hover{background:var(--brand-softer);color:var(--brand)}.sgrp-h .ico{width:19px;height:19px;flex:none}.sgrp-h span{flex:1;overflow:hidden;text-overflow:ellipsis}
-.sgrp-h .chev{width:15px;height:15px;transform:rotate(-90deg);transition:transform .2s;color:var(--muted)}.sgrp.open>.sgrp-h .chev{transform:rotate(90deg)}
+.el-modes{display:flex;flex-wrap:wrap;gap:10px 14px;margin:4px 0 14px}
+.el-mg{display:flex;flex-direction:column;gap:5px;min-width:0}.el-mg{flex:1 1 auto;min-width:0}.el-mg:first-child{flex-grow:4}.el-mg:nth-child(2){flex-grow:2}.el-mg:last-child{flex-grow:0}
+.el-mgh{font-size:11.5px;font-weight:600;letter-spacing:.06em;color:var(--muted);padding-left:2px}
+.el-mgb{display:flex;flex-wrap:nowrap;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:5px}
+.el-modes button{flex:1 1 0;font:inherit;display:flex;align-items:center;gap:9px;text-align:left;border:1px solid transparent;background:transparent;border-radius:10px;padding:8px 10px;cursor:pointer;color:var(--text-2);min-width:0;transition:background .15s,color .15s,box-shadow .15s}
+.el-modes button .ico{width:20px;height:20px;flex:none;color:var(--muted)}
+.el-modes button span{display:flex;flex-direction:column;min-width:0;line-height:1.25}.el-modes button b{font-size:13.8px;font-weight:600;white-space:nowrap}.el-modes button small{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:0;min-width:100%}
+.el-modes button:hover{background:var(--surface);color:var(--brand)}.el-modes button:hover .ico{color:var(--brand)}
+.el-modes button.on{background:var(--surface);border-color:color-mix(in srgb,var(--brand) 35%,var(--border));color:var(--brand);box-shadow:0 2px 8px color-mix(in srgb,var(--brand) 16%,transparent)}.el-modes button.on .ico{color:var(--brand)}
+@media (max-width:760px){.el-mgb{display:grid;grid-template-columns:1fr 1fr}.el-mg{flex-basis:100%}.el-modes button b,.el-modes button small{white-space:normal}}
+.sgrp{display:flex;flex-direction:column;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+.sgrp-h{display:flex;align-items:center;gap:8px;padding:4px 12px 6px;border-radius:8px;cursor:pointer;font-family:'Prompt',sans-serif;font-weight:600;font-size:11.5px;letter-spacing:.06em;color:var(--muted);user-select:none;white-space:nowrap}
+.sgrp-h:hover{color:var(--brand)}.sgrp-h>.ico:first-child{display:none}.sgrp-h span{flex:1;overflow:hidden;text-overflow:ellipsis}
+.sgrp-h .chev{width:13px;height:13px;transform:rotate(-90deg);transition:transform .2s;opacity:.55}.sgrp.open>.sgrp-h .chev{transform:rotate(90deg)}
 .sgrp.cur>.sgrp-h{color:var(--brand)}
-.sgrp-b{padding-left:12px;margin-left:21px;border-left:2px solid var(--border)}
-.sgrp-b{overflow:hidden;display:flex;flex-direction:column;gap:2px;max-height:0;transition:max-height .25s ease,padding .2s;padding-top:0;padding-bottom:0}.sgrp.open>.sgrp-b{max-height:420px;padding-top:2px;padding-bottom:6px}
-.sgrp-b button{font-size:13.5px!important;padding:8px 10px!important}
-.side-foot{border-top:1px solid var(--border);padding:10px 10px 6px;display:flex;flex-direction:column;gap:4px}
+.sgrp-b{overflow:hidden;display:flex;flex-direction:column;gap:1px;max-height:0;transition:max-height .25s ease}.sgrp.open>.sgrp-b{max-height:420px}
+.sgrp-b button{font-size:13.8px!important;padding:8px 12px!important}
+.sgrp-b button:not(.on) .ico{color:var(--muted)}.sgrp-b button:hover .ico{color:var(--brand)}
+.side-foot{border-top:1px solid var(--border);padding:8px 10px;display:flex;align-items:center;gap:6px}.side-foot .side-me{flex:1;padding:4px 2px}
+.side-foot .side-act{width:38px;height:38px;padding:0;justify-content:center;flex:none}.side-foot .side-act span{display:none}
+body.side-mini .side-foot{flex-direction:column}
 .side-me{display:flex;align-items:center;gap:10px;padding:6px 8px 8px;min-width:0}.side-me .av{width:34px;height:34px;border-radius:10px;background:var(--brand-soft);color:var(--brand-deep);display:grid;place-items:center;font-weight:700;flex:none}
 .side-me-t{min-width:0;line-height:1.25}.side-me-t b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.side-me-t small{display:block;color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .side-act{display:flex;align-items:center;gap:10px;font:inherit;font-size:13.5px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;text-decoration:none;white-space:nowrap}
 .side-act .ico{width:18px;height:18px;flex:none}.side-act.dash{background:linear-gradient(135deg,var(--accent-2),var(--accent));color:#fff;border-color:transparent;font-weight:600}.side-act.dash:hover{filter:brightness(1.05)}
 .side-act.out:hover{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 40%,transparent)}
 body.side-mini .sgrp-h span,body.side-mini .sgrp-h .chev,body.side-mini .side-me-t,body.side-mini .side-act span{display:none}
-body.side-mini .sgrp-h{justify-content:center;padding:10px 0}body.side-mini .sgrp-b{margin-left:0;padding-left:0;border-left:0;max-height:none!important}
+body.side-mini .sgrp-h{display:none}body.side-mini .sgrp{margin-top:6px;padding-top:6px}body.side-mini .sgrp-b{max-height:none!important}
 body.side-mini .side-act,body.side-mini .side-me{justify-content:center;padding-left:0;padding-right:0}
 .side-collapse{font:inherit;font-size:13px;display:flex;align-items:center;gap:10px;border:0;border-top:1px solid var(--border);background:none;color:var(--text-2);padding:12px 22px;cursor:pointer;white-space:nowrap}
 .side-collapse:hover{color:var(--brand)}
@@ -866,30 +878,32 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <button data-p="pAdv" class="side-solo" id="advNav" title="นักศึกษาในความดูแล" style="display:none"><i class="ico" data-i="teacher"></i><span>นักศึกษาในความดูแล</span></button>
     <div class="sgrp" data-g="stu"><div class="sgrp-h" role="button" tabindex="0" title="นักศึกษา"><i class="ico" data-i="users"></i><span>นักศึกษา</span><i class="ico chev" data-i="chevron"></i></div><div class="sgrp-b">
       <button data-p="pSearch" title="ค้นหารายบุคคล"><i class="ico" data-i="search"></i><span>ค้นหารายบุคคล</span></button>
-      <button data-p="pElig" title="ตรวจสิทธิ์ฝึกงาน / สำเร็จการศึกษา"><i class="ico" data-i="check-circle"></i><span>ตรวจสิทธิ์ฝึกงาน / จบ</span></button>
-      <button data-p="pStudents" class="on" title="นักศึกษา"><i class="ico" data-i="users"></i><span>นักศึกษา</span></button>
-      <button data-p="pMental" class="mh-only" title="สุขภาพจิตนักศึกษา" style="display:none"><i class="ico" data-i="heart-pulse"></i><span>สุขภาพจิตนักศึกษา</span></button>
+      <button data-p="pStudents" class="on" title="รายชื่อนักศึกษา"><i class="ico" data-i="users"></i><span>รายชื่อนักศึกษา</span></button>
       <button data-p="pRisk" title="กลุ่มเสี่ยง / ผลการเรียน"><i class="ico" data-i="alert"></i><span>กลุ่มเสี่ยง / ผลการเรียน</span></button>
+      <button data-p="pMental" class="mh-only" title="สุขภาพจิตนักศึกษา" style="display:none"><i class="ico" data-i="heart-pulse"></i><span>สุขภาพจิตนักศึกษา</span></button>
     </div></div>
-    <div class="sgrp" data-g="work"><div class="sgrp-h" role="button" tabindex="0" title="งานประจำ"><i class="ico" data-i="clipboard"></i><span>งานประจำ</span><i class="ico chev" data-i="chevron"></i></div><div class="sgrp-b">
+    <div class="sgrp" data-g="chk"><div class="sgrp-h" role="button" tabindex="0" title="ตรวจสอบสิทธิ์"><i class="ico" data-i="check-circle"></i><span>ตรวจสอบสิทธิ์</span><i class="ico chev" data-i="chevron"></i></div><div class="sgrp-b">
+      <button data-p="pElig" title="ตรวจสิทธิ์ฝึกงาน / สำเร็จการศึกษา · สอบอังกฤษ-คอม · แผนการศึกษา"><i class="ico" data-i="check-circle"></i><span>ตรวจสิทธิ์ฝึกงาน / จบ</span></button>
+      <button data-p="pGrad" class="w-only" title="ไฟล์ตรวจสอบจบ (REG)"><i class="ico" data-i="file"></i><span>ไฟล์ตรวจสอบจบ (REG)</span></button>
+    </div></div>
+    <div class="sgrp" data-g="work"><div class="sgrp-h" role="button" tabindex="0" title="งานประจำภาค"><i class="ico" data-i="calendar"></i><span>งานประจำภาค</span><i class="ico chev" data-i="chevron"></i></div><div class="sgrp-b">
       <button data-p="pTerm" title="ปิดภาคการศึกษา"><i class="ico" data-i="flag"></i><span>ปิดภาคการศึกษา</span></button>
+      <button data-p="pReport" title="รายงานสิ้นภาค"><i class="ico" data-i="send"></i><span>รายงานสิ้นภาค</span></button>
       <button data-p="pReq" title="คำร้อง REQ (ลาพัก/คืนสภาพ)"><i class="ico" data-i="refresh"></i><span>คำร้อง REQ</span></button>
       <button data-p="pCal" title="ปฏิทินการศึกษา"><i class="ico" data-i="calendar"></i><span>ปฏิทินการศึกษา</span></button>
-      <button data-p="pReport" title="รายงานสิ้นภาค"><i class="ico" data-i="send"></i><span>รายงานสิ้นภาค</span></button>
-      <button data-p="pGrad" class="w-only" title="ไฟล์ตรวจสอบจบ"><i class="ico" data-i="file"></i><span>ไฟล์ตรวจสอบจบ</span></button>
     </div></div>
-    <div class="sgrp" data-g="data"><div class="sgrp-h" role="button" tabindex="0" title="ข้อมูล"><i class="ico" data-i="database"></i><span>ข้อมูล</span><i class="ico chev" data-i="chevron"></i></div><div class="sgrp-b">
-      <button data-p="pImport" title="นำเข้า/ส่งออก"><i class="ico" data-i="swap"></i><span>นำเข้า/ส่งออก</span></button>
+    <div class="sgrp" data-g="data"><div class="sgrp-h" role="button" tabindex="0" title="ข้อมูลและเอกสาร"><i class="ico" data-i="database"></i><span>ข้อมูลและเอกสาร</span><i class="ico chev" data-i="chevron"></i></div><div class="sgrp-b">
+      <button data-p="pImport" title="นำเข้า / ส่งออก"><i class="ico" data-i="swap"></i><span>นำเข้า / ส่งออก</span></button>
       <button data-p="pFiles" title="ไฟล์เอกสาร"><i class="ico" data-i="folder"></i><span>ไฟล์เอกสาร</span></button>
       <button data-p="pQuality" title="ตรวจคุณภาพข้อมูล"><i class="ico" data-i="clipboard"></i><span>ตรวจคุณภาพข้อมูล</span></button>
       <button data-p="pLogs" title="บันทึกการแก้ไข"><i class="ico" data-i="history"></i><span>บันทึกการแก้ไข</span></button>
     </div></div>
-    <div class="sgrp adm" data-g="sys"><div class="sgrp-h" role="button" tabindex="0" title="ระบบ"><i class="ico" data-i="settings"></i><span>ระบบ</span><i class="ico chev" data-i="chevron"></i></div><div class="sgrp-b">
-      <button data-p="pMaster" class="adm" title="ข้อมูลหลัก"><i class="ico" data-i="database"></i><span>ข้อมูลหลัก</span></button>
-      <button data-p="pHealth" class="adm" title="สุขภาพระบบ"><i class="ico" data-i="heart-pulse"></i><span>สุขภาพระบบ</span></button>
+    <div class="sgrp adm" data-g="sys"><div class="sgrp-h" role="button" tabindex="0" title="ผู้ดูแลระบบ"><i class="ico" data-i="settings"></i><span>ผู้ดูแลระบบ</span><i class="ico chev" data-i="chevron"></i></div><div class="sgrp-b">
       <button data-p="pSettings" class="adm" title="ตั้งค่า"><i class="ico" data-i="settings"></i><span>ตั้งค่า</span></button>
       <button data-p="pUsers" class="own" title="ผู้ใช้ระบบ"><i class="ico" data-i="shield-lock"></i><span>ผู้ใช้ระบบ</span></button>
+      <button data-p="pMaster" class="adm" title="ข้อมูลหลัก"><i class="ico" data-i="database"></i><span>ข้อมูลหลัก</span></button>
       <button data-p="pAccess" class="own" title="บันทึกการเข้าใช้"><i class="ico" data-i="shield"></i><span>บันทึกการเข้าใช้</span></button>
+      <button data-p="pHealth" class="adm" title="สุขภาพระบบ"><i class="ico" data-i="heart-pulse"></i><span>สุขภาพระบบ</span></button>
     </div></div>
   </nav>
   <div class="side-foot">
@@ -897,7 +911,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
-  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 25/11/69 #4</small></span></button>
+  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 26/11/69 UI</small></span></button>
 </aside>
 <div class="side-overlay" id="sideOverlay"></div>
 <div class="shell-main">
@@ -1227,8 +1241,10 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
         <div><h3>ตรวจสิทธิ์ฝึกงาน · สำเร็จการศึกษา · ตกค้าง · สถานภาพ</h3>
         <p class="sub" id="elSub">ใช้ข้อมูลจากไฟล์ตรวจสอบจบ (REG) ที่นำเข้าล่าสุดของนักศึกษาแต่ละคน</p></div>
       </div>
-      <div class="seg" id="elSeg" style="margin-bottom:12px;flex-wrap:wrap">
-        <button data-m="intern4" class="on"><i class="ico" data-i="hospital"></i> ฝึกงานปี 4</button><button data-m="intern6"><i class="ico" data-i="hospital"></i> ฝึกงานปี 6</button><button data-m="grad"><i class="ico" data-i="grad"></i> สำเร็จการศึกษา</button><button data-m="overdue"><i class="ico" data-i="hourglass"></i> ตกค้าง (เปอร์)</button><button data-m="prob"><i class="ico" data-i="scale"></i> สถานภาพ</button><button data-m="test"><i class="ico" data-i="clipboard"></i> สอบอังกฤษ · คอม</button><button data-m="plan"><i class="ico" data-i="book"></i> แผนการศึกษา</button>
+      <div class="el-modes" id="elSeg">
+        <div class="el-mg"><div class="el-mgh">ตรวจสิทธิ์</div><div class="el-mgb"><button data-m="intern4" class="on"><i class="ico" data-i="hospital"></i><span><b>ฝึกงานปี 4</b><small>ก่อนออกฝึก ภาค 3</small></span></button><button data-m="intern6"><i class="ico" data-i="hospital"></i><span><b>ฝึกงานปี 6</b><small>ฝึกปฏิบัติวิชาชีพ</small></span></button><button data-m="grad"><i class="ico" data-i="grad"></i><span><b>สำเร็จการศึกษา</b><small>ตรวจจบหลักสูตร</small></span></button><button data-m="overdue"><i class="ico" data-i="hourglass"></i><span><b>ตกค้าง (เปอร์)</b><small>เรียนเกินแผน</small></span></button></div></div>
+        <div class="el-mg"><div class="el-mgh">ติดตาม</div><div class="el-mgb"><button data-m="prob"><i class="ico" data-i="scale"></i><span><b>สถานภาพ</b><small>วิทยาทัณฑ์ · พ้นสภาพ</small></span></button><button data-m="test"><i class="ico" data-i="clipboard"></i><span><b>สอบอังกฤษ · คอม</b><small>สอบแล้ว / ยังไม่สอบ</small></span></button></div></div>
+        <div class="el-mg"><div class="el-mgh">ตั้งค่า</div><div class="el-mgb"><button data-m="plan"><i class="ico" data-i="book"></i><span><b>แผนการศึกษา</b><small>รายวิชาตามหลักสูตร</small></span></button></div></div>
       </div>
       <div id="elRule" class="rule-box"></div>
       <div id="elBody"></div>
@@ -1718,16 +1734,16 @@ async function reload(quiet) { B = unpackB(await call('adminBootstrap')); STU = 
 const INIT_TAB = String('<?= tab ?>').replace(/[^a-z]/gi, '');
 const INIT_SID = String('<?= sid ?>').replace(/[^\d-]/g, '');
 // ---- เมนูด้านข้างแบบกลุ่ม (กดหัวข้อเพื่อเปิด/ปิด · เปิดกลุ่มของหน้าปัจจุบันอัตโนมัติ) ----
-function sgrpSave() { try { localStorage.setItem('sgrpOpen', JSON.stringify([...document.querySelectorAll('.sgrp.open')].map(g => g.dataset.g))); } catch (e) {} }
+function sgrpSave() { try { localStorage.setItem('sgrpShut', JSON.stringify([...document.querySelectorAll('.sgrp:not(.open)')].map(g => g.dataset.g))); } catch (e) {} }
 function sgrpOpen(g, on) { if (!g) return; g.classList.toggle('open', on); g.querySelector('.sgrp-h').setAttribute('aria-expanded', on); sgrpSave(); }
 function sgrpToggle(g) { sgrpOpen(g, !g.classList.contains('open')); }
 function sgrpInit() {
-  let saved = null; try { saved = JSON.parse(localStorage.getItem('sgrpOpen') || 'null'); } catch (e) {}
+  let shut = []; try { shut = JSON.parse(localStorage.getItem('sgrpShut') || '[]') || []; } catch (e) {}
   document.querySelectorAll('.sgrp').forEach(g => {
     const vis = [...g.querySelectorAll('button[data-p]')].some(b => b.style.display !== 'none' && getComputedStyle(b).display !== 'none');
     g.style.display = vis && g.style.display !== 'none' ? '' : 'none';
     const cur = !!g.querySelector('button[data-p].on'); g.classList.toggle('cur', cur);
-    sgrpOpen(g, cur || (saved ? saved.includes(g.dataset.g) : false));
+    sgrpOpen(g, cur || !shut.includes(g.dataset.g));
   });
   document.querySelectorAll('.sgrp-h').forEach(h => h.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sgrpToggle(h.parentNode); } });
 }
