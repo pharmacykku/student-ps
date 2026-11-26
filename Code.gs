@@ -1910,7 +1910,7 @@ function gradExtra_(c, g, P, compCodes, extraReq, id) {
   const gr = k ? c.final[k] || '' : '';
   const comp = { code: k || codes[0], name: k ? c.name[k] || '' : '', grade: gr, st: !k ? 'none' : ok(gr) ? 'pass' : gr === '--' || !gr ? 'pend' : 'fail' };
   const req = planReqCodes_(P, extraReq);
-  const mis = Object.keys(c.cat).filter(x => isFreeElec_(c.cat[x]) && req[x.toUpperCase()]).map(x => ({ code: x, name: c.name[x] || req[x.toUpperCase()].name, grade: c.final[x] || '', planCode: req[x.toUpperCase()].code, cat: c.cat[x] }));
+  const mis = Object.keys(c.cat).filter(x => isFreeElec_(c.cat[x]) && req[x.toUpperCase()]).map(x => { const h = (c.hist[x] || []).slice(-1)[0]; return { code: x, name: c.name[x] || req[x.toUpperCase()].name, grade: c.final[x] || '', planCode: req[x.toUpperCase()].code, planYear: req[x.toUpperCase()].year || '', cat: c.cat[x], term: h && h.t && h.y ? h.t + '/' + h.y : '' }; });
   return { comp, eng: engOf_(id, g), mis, hasPlan: !!(P && P.courses && P.courses.length) };
 }
 /** ระดับตรวจตามแผนรายปี/ภาค: { "1/1": "pass" | "reg" } · spec เช่น { pass: ['1','5/1'], reg: ['5/2'] } */
@@ -2400,6 +2400,31 @@ function adminTestStatus(token) {
         major: H['สาขาเน้น'] !== undefined ? String(r[H['สาขาเน้น']] || '').trim() : '', advisor: normAdv_(r[H['อาจารย์ที่ปรึกษา']]), reg: g ? g.date : '', eng: X.eng, comp });
     });
     return { rows, codes };
+  });
+}
+// ======================= ตรวจสอบรายวิชาบังคับหล่น =======================
+/** นักศึกษา (กำลังศึกษา) + รายวิชาบังคับตามแผนที่ไปอยู่หมวดเลือกเสรีในไฟล์ตรวจสอบจบ REG
+ *  status: mis (มีวิชาหล่น) · ok (ไม่มี) · noplan (ยังไม่มีแผนหลักสูตร) · nodata (ยังไม่มีไฟล์ตรวจสอบจบ) */
+function adminMisCheck(token) {
+  tabGuard_(auth_(token), 'pMis');
+  return verCache_('mis' + ELIG_VER, 3600, () => {
+    const st = readTable_(SH.STUDENTS), H = idx_(st.headers), gc = gradChkMap_(), cs = coursesById_(), plan = planFillTerms_(readPlan_(), cs);
+    const CFG = eligCfg_(); let extra = '';
+    Object.keys(CFG).forEach(m => ((CFG[m] && CFG[m].conds) || []).forEach(c => { if (c.type === 'misCat' && c.p && c.p.codes) extra += ' ' + c.p.codes; }));
+    const nMaj = s => String(s || '').replace(/\s|สาขา(วิชา)?|\(.*?\)/g, '').toLowerCase(), rows = [];
+    st.rows.forEach(r => {
+      const id = normId_(r[0]); if (!id || String(r[H['สถานะ']]).trim() !== 'กำลังศึกษา') return;
+      const major = H['สาขาเน้น'] !== undefined ? String(r[H['สาขาเน้น']] || '').trim() : '', g = gc[id];
+      const o = { id, name: String(r[H['คำนำหน้า']] || '') + r[H['ชื่อ']] + ' ' + r[H['นามสกุล']], year: Number(r[H['ชั้นปี']]) || '', program: progLabel_(r, H), major, advisor: normAdv_(r[H['อาจารย์ที่ปรึกษา']]), mis: [] };
+      if (!g) { o.status = 'nodata'; rows.push(o); return; }
+      o.reg = g.date; o.cur = g.cur; o.url = g.url;
+      const P0 = plan[g.cur], sm = nMaj(major);
+      const P = P0 && Object.assign({}, P0, { courses: P0.courses.filter(x => { if (!x.maj) return true; if (!sm) return false; return String(x.maj).split(/[,/]+/).some(m => { const k = nMaj(m); return k && (sm.indexOf(k) >= 0 || k.indexOf(sm) >= 0); }); }) });
+      const X = gradExtra_(cs[id], g, P, '', extra, id);
+      o.mis = X.mis; o.status = X.mis.length ? 'mis' : !X.hasPlan && !extra.trim() ? 'noplan' : 'ok'; o.hasPlan = X.hasPlan;
+      rows.push(o);
+    });
+    return { rows, extra: extra.trim() };
   });
 }
 function adminSaveProbCfg(token, o) {   // รูปแบบเดิม (ยังรองรับ) → แปลงเป็นเกณฑ์รวม
@@ -3721,7 +3746,7 @@ function noticesRaw_(token, s) {
 
 // ======================= สิทธิ์รายเมนู =======================
 /** เมนูที่กำหนดสิทธิ์ได้ (เจ้าหน้าที่/ดูอย่างเดียว) · ไม่ระบุ = ใช้ได้ทุกเมนูตามบทบาท · ผู้ดูแลระบบใช้ได้ทุกเมนูเสมอ */
-const MENU_TABS = { pStudents: 'นักศึกษา', pRisk: 'กลุ่มเสี่ยง / ผลการเรียน', pElig: 'ตรวจสิทธิ์ฝึกงาน/จบ', pTerm: 'ปิดภาคการศึกษา', pReport: 'รายงานสิ้นภาค', pCal: 'ปฏิทินการศึกษา', pReq: 'คำร้อง REQ (ลาพัก/คืนสภาพ)',
+const MENU_TABS = { pStudents: 'นักศึกษา', pRisk: 'กลุ่มเสี่ยง / ผลการเรียน', pElig: 'ตรวจสิทธิ์ฝึกงาน/จบ', pTerm: 'ปิดภาคการศึกษา', pReport: 'รายงานสิ้นภาค', pCal: 'ปฏิทินการศึกษา', pReq: 'คำร้อง REQ (ลาพัก/คืนสภาพ)', pMis: 'ตรวจสอบรายวิชาบังคับหล่น',
   pImport: 'นำเข้า/ส่งออก', pFiles: 'ไฟล์เอกสาร', pQuality: 'คุณภาพข้อมูล', pMaster: 'ข้อมูลหลัก', pLogs: 'บันทึกการแก้ไข' };
 function tabGuard_(s, tab) {
   if (!s || !s.tabs || !s.tabs.length || ADMIN_ROLES.indexOf(s.role) >= 0) return s;

@@ -380,6 +380,9 @@ kbd{font:600 11px/1.6 'Sarabun',sans-serif;padding:0 6px;border-radius:6px;borde
 .tabs button span{overflow:hidden;text-overflow:ellipsis}
 .tabs button:hover{background:var(--brand-softer);color:var(--brand)}
 .tabs button.on{background:linear-gradient(135deg,var(--brand-2),var(--brand));color:#fff;font-weight:600;box-shadow:0 4px 12px color-mix(in srgb,var(--brand) 28%,transparent)}
+.ms-dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:14px;margin-top:6px}.ms-dash h4{margin:8px 0 6px}
+.ms-bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}.ms-bar i{display:block;height:100%;background:var(--critical);border-radius:99px}
+.ms-c{font-size:13px;line-height:1.45}.ms-crs.on td{background:var(--brand-softer)}
 .el-modes{display:flex;flex-wrap:wrap;gap:10px 14px;margin:4px 0 14px}
 .el-mg{display:flex;flex-direction:column;gap:5px;min-width:0}.el-mg{flex:1 1 auto;min-width:0}.el-mg:first-child{flex-grow:4}.el-mg:nth-child(2){flex-grow:2}.el-mg:last-child{flex-grow:0}
 .el-mgh{font-size:11.5px;font-weight:600;letter-spacing:.06em;color:var(--muted);padding-left:2px}
@@ -889,6 +892,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <div class="sgrp" data-g="work"><div class="sgrp-h" role="button" tabindex="0" title="งานประจำภาค"><i class="ico" data-i="calendar"></i><span>งานประจำภาค</span><i class="ico chev" data-i="chevron"></i></div><div class="sgrp-b">
       <button data-p="pTerm" title="ปิดภาคการศึกษา"><i class="ico" data-i="flag"></i><span>ปิดภาคการศึกษา</span></button>
       <button data-p="pReport" title="รายงานสิ้นภาค"><i class="ico" data-i="send"></i><span>รายงานสิ้นภาค</span></button>
+      <button data-p="pMis" title="ตรวจสอบรายวิชาบังคับหล่น (ไปอยู่หมวดเลือกเสรี)"><i class="ico" data-i="book"></i><span>ตรวจสอบวิชาบังคับหล่น</span></button>
       <button data-p="pReq" title="คำร้อง REQ (ลาพัก/คืนสภาพ)"><i class="ico" data-i="refresh"></i><span>คำร้อง REQ</span></button>
       <button data-p="pCal" title="ปฏิทินการศึกษา"><i class="ico" data-i="calendar"></i><span>ปฏิทินการศึกษา</span></button>
     </div></div>
@@ -911,7 +915,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
-  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 26/11/69 UI</small></span></button>
+  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 26/11/69 วิชาหล่น</small></span></button>
 </aside>
 <div class="side-overlay" id="sideOverlay"></div>
 <div class="shell-main">
@@ -937,6 +941,13 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
 
   <!-- ===== CALENDAR ===== -->
   <section class="panel" id="pReq"><div id="reqBody"><div class="loading"><div class="spin"></div>กำลังโหลด…</div></div></section>
+  <section class="panel" id="pMis">
+    <div class="card">
+      <h3>ตรวจสอบรายวิชาบังคับหล่น</h3>
+      <p class="sub">รายวิชาบังคับตามแผนการศึกษาที่ไปอยู่ <b>หมวดวิชาเลือกเสรี</b> ในไฟล์ตรวจสอบจบ (REG) · นักศึกษาสถานะกำลังศึกษา · แยกตามหลักสูตร / ชั้นปี</p>
+      <div id="msBody"><div class="loading"><div class="spin"></div>กำลังโหลด…</div></div>
+    </div>
+  </section>
   <section class="panel" id="pCal"><div id="calBody"><div class="loading"><div class="spin"></div>กำลังโหลด…</div></div></section>
 
   <!-- ===== SYSTEM HEALTH ===== -->
@@ -1779,6 +1790,7 @@ $('tabs').onclick = e => {
   if (b.dataset.p === 'pHome') renderHome();
   if (b.dataset.p === 'pCal') calLoad();
   if (b.dataset.p === 'pReq') reqLoad();
+  if (b.dataset.p === 'pMis' && !MS.data) msLoad();
   if (b.dataset.p === 'pStudents' && LD.open) { LD.open = false; ldRender(); }   // เข้าเมนูนักศึกษาทุกครั้ง แผงหัวหน้าปิดไว้
   if (b.dataset.p === 'pHealth') hlLoad();
   if (b.dataset.p === 'pImport') inboxLoad();
@@ -5541,6 +5553,108 @@ async function tsExportSum() {
   return { title: t + ' — ' + tsScopeTxt(true), sub: 'ข้อมูล ณ ' + new Date().toLocaleDateString('th-TH') + ' · นักศึกษาสถานะกำลังศึกษา · % คิดจากจำนวนนักศึกษาในกลุ่ม', file: t.replace(/\s+/g, '_') + (TS.y ? '_ปี' + TS.y : ''), sheet: 'สรุป',
     headers: ['มิติ', 'กลุ่ม', 'นักศึกษา', 'สอบครบ 2 ส่วน', 'สอบครบ 2 ส่วน (%)', 'อังกฤษ สอบแล้ว', 'อังกฤษ ยังไม่สอบ', 'อังกฤษ ไม่มีข้อมูล', 'อังกฤษ สอบแล้ว (%)', 'คอม สอบแล้ว', 'คอม ยังไม่สอบ', 'คอม ไม่มีข้อมูล', 'คอม สอบแล้ว (%)', 'สอบแล้ว 1 ส่วน', 'ยังไม่สอบทั้ง 2 ส่วน', 'ไม่มีข้อมูลทั้ง 2 ส่วน'], rows };
 }
+// ---- ตรวจสอบรายวิชาบังคับหล่น ----
+const MS = { data: null, y: '', prog: '', f: 'mis', code: '', q: '', page: 0, open: {} };
+const MS_ST = { mis: ['st-no', 'มีวิชาหล่น'], ok: ['st-ok', 'ไม่มีวิชาหล่น'], noplan: ['st-nodata', 'ยังไม่มีแผนหลักสูตร'], nodata: ['st-nodata', 'ไม่มีไฟล์ REG'] };
+async function msLoad(force) {
+  if (force) MS.data = null;
+  $('msBody').innerHTML = '<div class="loading"><div class="spin"></div>กำลังตรวจรายวิชา…</div>';
+  MS.data = await call('adminMisCheck').catch(e => { $('msBody').innerHTML = `<div class="empty">${esc(e.message || e)}</div>`; return null; });
+  if (MS.data) msRender();
+}
+const msBase = () => MS.data.rows.filter(r => (!MS.y || String(r.year) === MS.y) && (!MS.prog || r.program === MS.prog));
+function msRows() {
+  const q = MS.q.toLowerCase();
+  return msBase().filter(r => (!MS.f || r.status === MS.f) && (!MS.code || r.mis.some(m => m.code === MS.code))
+    && (!q || (r.id + ' ' + r.name + ' ' + r.advisor + ' ' + r.mis.map(m => m.code + ' ' + m.name).join(' ')).toLowerCase().includes(q)))
+    .sort((a, b) => String(a.program).localeCompare(String(b.program), 'th') || (Number(a.year) || 9) - (Number(b.year) || 9) || b.mis.length - a.mis.length || a.id.localeCompare(b.id));
+}
+function msStat(L) { const M = L.filter(r => r.status === 'mis'); return { n: L.length, chk: L.filter(r => r.status === 'mis' || r.status === 'ok').length, stu: M.length, crs: M.reduce((a, r) => a + r.mis.length, 0), nodata: L.filter(r => r.status === 'nodata').length, noplan: L.filter(r => r.status === 'noplan').length }; }
+function msCourses(L) {
+  const o = {}; L.forEach(r => r.mis.forEach(m => { const x = o[m.code] = o[m.code] || { code: m.code, name: m.name, planCode: m.planCode, n: 0, years: {}, progs: {} }; x.n++; x.years[r.year] = (x.years[r.year] || 0) + 1; x.progs[r.program] = (x.progs[r.program] || 0) + 1; }));
+  return Object.values(o).sort((a, b) => b.n - a.n || a.code.localeCompare(b.code));
+}
+function msRender() {
+  const D = MS.data, B0 = msBase(), S = msStat(B0), R = msRows(), CR = msCourses(B0);
+  const years = [...new Set(D.rows.map(r => r.year).filter(Boolean))].sort(), progs = [...new Set(D.rows.map(r => r.program).filter(Boolean))].sort();
+  const pct = (a, b) => b ? Math.round(a * 1000 / b) / 10 : 0;
+  const tile = (f, l, v, cl, sub) => `<button class="mini" data-msf="${f}" style="text-align:left;cursor:${f ? 'pointer' : 'default'};font:inherit;color:inherit;${MS.f === f && f ? 'border-color:var(--brand);box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 20%,transparent)' : ''}"><div class="l">${l}</div><div class="v ${cl}">${v.toLocaleString()}</div><div class="muted" style="font-size:12px">${sub}</div></button>`;
+  const grid = (lab, keys, get, fmt) => { const L = keys.map(k => [k, msStat(B0.filter(r => get(r) === k)), B0.filter(r => get(r) === k)]).filter(x => x[1].n); if (!L.length) return '';
+    const mx = Math.max(1, ...L.map(x => x[1].stu));
+    return `<div class="table-wrap"><table class="t"><thead><tr><th>${lab}</th><th class="num">นักศึกษา</th><th class="num">ตรวจได้</th><th class="num">มีวิชาหล่น (คน)</th><th style="min-width:70px"></th><th class="num">รวมรายวิชา</th></tr></thead><tbody>
+      ${L.map(([k, c]) => `<tr><td style="white-space:normal;min-width:90px">${esc(fmt(k))}</td><td class="num">${c.n}</td><td class="num">${c.chk}</td><td class="num ${c.stu ? 'bad' : ''}"><b>${c.stu}</b> <span class="muted" style="font-size:12px">${pct(c.stu, c.chk)}%</span></td><td style="min-width:60px"><div class="ms-bar"><i style="width:${c.stu * 100 / mx}%"></i></div></td><td class="num">${c.crs}</td></tr>`).join('')}</tbody></table></div>`; };
+  const P = MS.page = Math.min(MS.page, Math.max(0, Math.ceil(R.length / 50) - 1)), PG = R.slice(P * 50, P * 50 + 50);
+  $('msBody').innerHTML = `
+    <div class="toolbar" style="flex-wrap:wrap">
+      <select id="msY"><option value="">ทุกชั้นปี</option>${years.map(y => `<option value="${y}" ${String(y) === MS.y ? 'selected' : ''}>ชั้นปีที่ ${y}</option>`).join('')}</select>
+      <select id="msP"><option value="">ทุกหลักสูตร/กลุ่ม</option>${progs.map(p => `<option ${p === MS.prog ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>
+      <div class="spacer"></div>
+      <button class="btn" onclick="XP.open(msExportSum, { format: 'xlsx' })"><i class="ico" data-i="chart"></i> สรุป Excel</button>
+      <button class="btn" onclick="msLoad(true)"><i class="ico" data-i="refresh"></i> ตรวจใหม่</button>
+    </div>
+    <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      ${tile('', 'นักศึกษาทั้งหมด', S.n, '', 'กำลังศึกษา')}${tile('ok', 'ตรวจแล้ว ไม่มีวิชาหล่น', S.chk - S.stu, 'ok', 'จากที่ตรวจได้ ' + S.chk + ' คน')}${tile('mis', 'มีวิชาบังคับหล่น', S.stu, 'bad', pct(S.stu, S.chk) + '% ของที่ตรวจได้')}
+      <div class="mini"><div class="l">รายวิชาที่หล่น (รวม)</div><div class="v warn">${S.crs.toLocaleString()}</div><div class="muted" style="font-size:12px">${CR.length} รหัสวิชา</div></div>
+      ${tile('nodata', 'ไม่มีไฟล์ REG', S.nodata, '', 'ยังตรวจไม่ได้')}${S.noplan ? tile('noplan', 'ยังไม่มีแผนหลักสูตร', S.noplan, '', 'ตั้งในแผนการศึกษา') : ''}
+    </div>
+    <div class="ms-dash">
+      <div><h4>แยกตามชั้นปี</h4>${grid('ชั้นปี', years, r => r.year, k => 'ปี ' + k) || '<div class="muted">—</div>'}</div>
+      <div><h4>แยกตามหลักสูตร / กลุ่ม</h4>${grid('หลักสูตร/กลุ่ม', progs, r => r.program, k => k) || '<div class="muted">—</div>'}</div>
+    </div>
+    <h4 style="margin:14px 0 6px">รายวิชาที่หล่นบ่อย <span class="muted" style="font-weight:400;font-size:13px">· กดเพื่อกรองรายชื่อ</span></h4>
+    ${CR.length ? `<div class="table-wrap" style="max-height:260px"><table class="t"><thead><tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th class="num">นักศึกษา</th><th>ชั้นปี</th><th>หลักสูตร/กลุ่ม</th></tr></thead><tbody>
+      ${CR.map(x => `<tr class="ms-crs ${MS.code === x.code ? 'on' : ''}" data-msc="${esc(x.code)}" style="cursor:pointer"><td><b>${esc(x.code)}</b>${x.planCode && x.planCode !== x.code ? ` <span class="muted" style="font-size:12px">(แผน ${esc(x.planCode)})</span>` : ''}</td><td style="white-space:normal">${esc(x.name)}</td><td class="num bad"><b>${x.n}</b></td>
+        <td>${Object.keys(x.years).sort().map(y => `<span class="badge">ปี ${y}: ${x.years[y]}</span>`).join(' ')}</td><td style="white-space:normal;font-size:12.5px">${Object.entries(x.progs).map(([p, n]) => esc(p) + ' (' + n + ')').join(' · ')}</td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty" style="padding:16px">ไม่พบรายวิชาบังคับหล่นในกลุ่มนี้</div>'}
+    <div class="toolbar" style="margin-top:16px;flex-wrap:wrap"><h4 style="margin:0">รายชื่อนักศึกษา</h4>
+      ${MS.f ? `<span class="badge brand" style="cursor:pointer" data-msf="${MS.f}">${MS_ST[MS.f][1]} ✕</span>` : ''}${MS.code ? `<span class="badge brand" style="cursor:pointer" data-msc="${esc(MS.code)}">วิชา ${esc(MS.code)} ✕</span>` : ''}
+      <input type="search" id="msQ" placeholder="ค้นหา รหัส / ชื่อ / อาจารย์ / รหัสวิชา" value="${esc(MS.q)}" style="flex:1;min-width:200px"><span class="muted" style="font-size:13px">${R.length.toLocaleString()} คน</span>
+      <button class="btn primary" onclick="XP.open(msExport, { format: 'xlsx' })"><i class="ico" data-i="file-sheet"></i> Excel</button>
+      <button class="btn" onclick="XP.open(msExport, { format: 'pdf' })"><i class="ico" data-i="file-pdf"></i> PDF</button></div>
+    <div class="table-wrap" style="max-height:62vh"><table class="t"><thead><tr><th>รหัสนักศึกษา</th><th>ชื่อ-สกุล</th><th class="num">ปี</th><th>หลักสูตร/กลุ่ม</th><th>สถานะ</th><th class="num">วิชาหล่น</th><th>รายวิชา</th><th>อาจารย์ที่ปรึกษา</th><th></th></tr></thead><tbody>` +
+    (PG.length ? PG.map(r => `<tr><td>${esc(r.id)}</td><td style="white-space:normal;min-width:150px">${esc(r.name)}</td><td class="num">${esc(r.year)}</td><td style="white-space:normal;min-width:110px">${esc(r.program)}${r.major ? `<div class="muted" style="font-size:12px">${esc(r.major)}</div>` : ''}</td>
+      <td><span class="st-chip ${MS_ST[r.status][0]}">${MS_ST[r.status][1]}</span></td><td class="num ${r.mis.length ? 'bad' : ''}"><b>${r.mis.length || ''}</b></td>
+      <td style="white-space:normal;min-width:240px">${r.mis.length ? (MS.open[r.id] || r.mis.length <= 2 ? r.mis.map(m => `<div class="ms-c"><b>${esc(m.code)}</b> ${esc(m.name)} <span class="muted">${[m.grade ? 'เกรด ' + m.grade : '', m.term ? 'ภาค ' + m.term : '', m.planYear ? 'แผนปี ' + m.planYear : ''].filter(Boolean).join(' · ')}</span></div>`).join('') + (r.mis.length > 2 ? `<a href="#" data-mso="${esc(r.id)}" style="font-size:12.5px">ย่อ</a>` : '')
+        : `<div class="ms-c"><b>${esc(r.mis[0].code)}</b> ${esc(r.mis[0].name)}</div><a href="#" data-mso="${esc(r.id)}" style="font-size:12.5px">ดูทั้งหมด ${r.mis.length} วิชา ▾</a>`) : '<span class="muted">—</span>'}</td>
+      <td style="white-space:normal;min-width:140px">${esc(r.advisor)}</td><td><button class="btn sm" data-msv="${esc(r.id)}">โปรไฟล์</button></td></tr>`).join('')
+      : '<tr><td colspan="9" class="muted" style="text-align:center;padding:24px">ไม่มีนักศึกษาในกลุ่มนี้</td></tr>') + '</tbody></table></div>' +
+    (R.length > 50 ? `<div class="el-pager"><button class="btn sm" data-msp="${P - 1}" ${P ? '' : 'disabled'}>‹</button><span>หน้า ${P + 1} / ${Math.ceil(R.length / 50)}</span><button class="btn sm" data-msp="${P + 1}" ${(P + 1) * 50 < R.length ? '' : 'disabled'}>›</button></div>` : '');
+  const re = () => { MS.page = 0; msRender(); };
+  $('msY').onchange = e => { MS.y = e.target.value; re(); };
+  $('msP').onchange = e => { MS.prog = e.target.value; re(); };
+  document.querySelectorAll('[data-msf]').forEach(b => { if (b.dataset.msf) b.onclick = () => { MS.f = MS.f === b.dataset.msf ? '' : b.dataset.msf; re(); }; });
+  document.querySelectorAll('[data-msc]').forEach(b => b.onclick = () => { MS.code = MS.code === b.dataset.msc ? '' : b.dataset.msc; if (MS.code) MS.f = ''; re(); });
+  document.querySelectorAll('[data-msp]').forEach(b => b.onclick = () => { MS.page = Number(b.dataset.msp); msRender(); });
+  document.querySelectorAll('[data-mso]').forEach(a => a.onclick = e => { e.preventDefault(); MS.open[a.dataset.mso] = !MS.open[a.dataset.mso]; msRender(); });
+  document.querySelectorAll('[data-msv]').forEach(b => b.onclick = () => openProfile(b.dataset.msv));
+  $('msQ').oninput = e => { MS.q = e.target.value; MS.page = 0; const pos = e.target.selectionStart; msRender(); $('msQ').focus(); $('msQ').setSelectionRange(pos, pos); };
+}
+function msScope() { return [MS.y ? 'ชั้นปีที่ ' + MS.y : 'ทุกชั้นปี', MS.prog || 'ทุกหลักสูตร', MS.f ? MS_ST[MS.f][1] : '', MS.code ? 'วิชา ' + MS.code : ''].filter(Boolean).join(' · '); }
+/** Excel: ชีต "รายวิชาที่หล่น" (1 แถว = 1 วิชาของ 1 คน) + "รายคน" + "สรุป" · PDF: รายวิชาที่หล่น */
+async function msExport() {
+  const R = msRows(), t = 'รายวิชาบังคับหล่นหมวดเลือกเสรี', L = [];
+  R.forEach(r => r.mis.forEach(m => L.push([L.length + 1, r.id, r.name, r.year, r.program, r.major || '', m.code, m.name, m.grade || '', m.term || '', m.planCode || '', m.planYear || '', r.advisor])));
+  const per = R.map((r, i) => [i + 1, r.id, r.name, r.year, r.program, r.major || '', MS_ST[r.status][1], r.mis.length, r.mis.map(m => m.code + ' ' + m.name).join('\n'), r.advisor, r.reg || '']);
+  const progs = [...new Set(R.map(r => r.program || '-'))];
+  const sumR = k => { const s = msStat(R.filter(r => (r.program || '-') === k)); return [k, s.n, s.chk, s.stu, s.crs, s.nodata]; };
+  return { title: t + ' — ' + msScope(), sub: 'จากไฟล์ตรวจสอบจบ (REG) · ข้อมูล ณ ' + new Date().toLocaleDateString('th-TH') + ' · นักศึกษา ' + R.filter(r => r.mis.length).length + ' คน · ' + L.length + ' รายวิชา', file: t.replace(/\s+/g, '_') + (MS.y ? '_ปี' + MS.y : ''), sheet: 'รายวิชาที่หล่น',
+    headers: ['ที่', 'รหัสนักศึกษา', 'ชื่อ-สกุล', 'ชั้นปี', 'หลักสูตร/กลุ่ม', 'สาขาเน้น', 'รหัสวิชา', 'ชื่อวิชา', 'เกรด', 'ภาค/ปีที่เรียน', 'รหัสวิชาในแผน', 'ชั้นปีในแผน', 'อาจารย์ที่ปรึกษา'],
+    defaultCols: ['ที่', 'รหัสนักศึกษา', 'ชื่อ-สกุล', 'ชั้นปี', 'หลักสูตร/กลุ่ม', 'รหัสวิชา', 'ชื่อวิชา', 'เกรด', 'ภาค/ปีที่เรียน'], rows: L,
+    extraSheets: [{ name: 'รายคน', headers: ['ที่', 'รหัสนักศึกษา', 'ชื่อ-สกุล', 'ชั้นปี', 'หลักสูตร/กลุ่ม', 'สาขาเน้น', 'สถานะ', 'จำนวนวิชาที่หล่น', 'รายวิชา', 'อาจารย์ที่ปรึกษา', 'วันที่ไฟล์ REG'], rows: per },
+      { name: 'สรุปตามหลักสูตร', headers: ['หลักสูตร/กลุ่ม', 'นักศึกษา', 'ตรวจได้', 'มีวิชาหล่น (คน)', 'รวมรายวิชา', 'ไม่มีไฟล์ REG'], rows: progs.map(sumR) }] };
+}
+/** สรุปตัวเลข: ชั้นปี · หลักสูตร · ชั้นปี×หลักสูตร · รายวิชา */
+async function msExportSum() {
+  const B0 = msBase(), rows = [], add = (d, k, L) => { const s = msStat(L); if (s.n) rows.push([d, k, s.n, s.chk, s.stu, s.chk ? Math.round(s.stu * 1000 / s.chk) / 10 : 0, s.crs, s.nodata]); };
+  const years = [...new Set(B0.map(r => r.year).filter(Boolean))].sort(), progs = [...new Set(B0.map(r => r.program).filter(Boolean))].sort();
+  add('รวม', msScope(), B0); years.forEach(y => add('ชั้นปี', 'ปี ' + y, B0.filter(r => r.year === y))); progs.forEach(p => add('หลักสูตร/กลุ่ม', p, B0.filter(r => r.program === p)));
+  years.forEach(y => progs.forEach(p => add('ชั้นปี × หลักสูตร', 'ปี ' + y + ' · ' + p, B0.filter(r => r.year === y && r.program === p))));
+  const CR = msCourses(B0), t = 'สรุปรายวิชาบังคับหล่น';
+  return { title: t + ' — ' + msScope(), sub: 'ข้อมูล ณ ' + new Date().toLocaleDateString('th-TH') + ' · % คิดจากนักศึกษาที่ตรวจได้ (มีไฟล์ REG)', file: t.replace(/\s+/g, '_'), sheet: 'สรุป',
+    headers: ['มิติ', 'กลุ่ม', 'นักศึกษา', 'ตรวจได้', 'มีวิชาหล่น (คน)', 'มีวิชาหล่น (%)', 'รวมรายวิชา', 'ไม่มีไฟล์ REG'], rows,
+    extraSheets: [{ name: 'รายวิชา', headers: ['รหัสวิชา', 'ชื่อวิชา', 'รหัสในแผน', 'จำนวนนักศึกษา', 'ชั้นปี', 'หลักสูตร/กลุ่ม'], rows: CR.map(x => [x.code, x.name, x.planCode || '', x.n, Object.keys(x.years).sort().map(y => 'ปี ' + y + ': ' + x.years[y]).join(', '), Object.entries(x.progs).map(([p, n]) => p + ' (' + n + ')').join(', ')]) }] };
+}
+
 // ---- สถานภาพ ----
 const PB_ST = { 'ปกติ': 'st-ok', 'รอพินิจ': 'st-prob', 'เข้าเกณฑ์พ้นสภาพ': 'st-dis' };
 function probRows() { const q = EL.q.toLowerCase(); return EL.data.rows.filter(r => (EL.filter ? r.status === EL.filter : r.status !== 'ปกติ') && (!q || (r.id + ' ' + r.name + ' ' + r.advisor).toLowerCase().includes(q))); }
