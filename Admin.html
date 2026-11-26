@@ -380,6 +380,7 @@ kbd{font:600 11px/1.6 'Sarabun',sans-serif;padding:0 6px;border-radius:6px;borde
 .tabs button span{overflow:hidden;text-overflow:ellipsis}
 .tabs button:hover{background:var(--brand-softer);color:var(--brand)}
 .tabs button.on{background:linear-gradient(135deg,var(--brand-2),var(--brand));color:#fff;font-weight:600;box-shadow:0 4px 12px color-mix(in srgb,var(--brand) 28%,transparent)}
+.ms-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;margin:10px 0 4px}.ms-ch{border:1px solid var(--border);border-radius:14px;padding:10px 14px 12px;background:var(--surface)}.ms-ch.wide{grid-column:1/-1}.ms-ch h4{margin:2px 0 8px;font-size:14px}.ms-cv{position:relative;height:250px}
 .ms-dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:14px;margin-top:6px}.ms-dash h4{margin:8px 0 6px}
 .ms-bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}.ms-bar i{display:block;height:100%;background:var(--critical);border-radius:99px}
 .ms-c{font-size:13px;line-height:1.45}.ms-crs.on td{background:var(--brand-softer)}
@@ -915,7 +916,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
-  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 26/11/69 วิชาหล่น</small></span></button>
+  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 26/11/69 วิชาหล่น+กราฟ</small></span></button>
 </aside>
 <div class="side-overlay" id="sideOverlay"></div>
 <div class="shell-main">
@@ -5597,6 +5598,11 @@ function msRender() {
       <div class="mini"><div class="l">รายวิชาที่หล่น (รวม)</div><div class="v warn">${S.crs.toLocaleString()}</div><div class="muted" style="font-size:12px">${CR.length} รหัสวิชา</div></div>
       ${tile('nodata', 'ไม่มีไฟล์ REG', S.nodata, '', 'ยังตรวจไม่ได้')}${S.noplan ? tile('noplan', 'ยังไม่มีแผนหลักสูตร', S.noplan, '', 'ตั้งในแผนการศึกษา') : ''}
     </div>
+    <div class="ms-charts">
+      <div class="ms-ch"><h4>นักศึกษาที่มีวิชาหล่น · แยกชั้นปี</h4><div class="ms-cv" style="height:${Math.max(250, progs.length * 46 + 70)}px"><canvas id="msC1"></canvas></div></div>
+      <div class="ms-ch"><h4>นักศึกษาที่มีวิชาหล่น · แยกหลักสูตร</h4><div class="ms-cv" style="height:${Math.max(250, progs.length * 46 + 70)}px"><canvas id="msC2"></canvas></div></div>
+      <div class="ms-ch wide"><h4>รายวิชาที่หล่น (จำนวนนักศึกษา) · แยกชั้นปี</h4><div class="ms-cv" style="height:${Math.max(180, Math.min(CR.length, 12) * 34 + 60)}px"><canvas id="msC3"></canvas></div></div>
+    </div>
     <div class="ms-dash">
       <div><h4>แยกตามชั้นปี</h4>${grid('ชั้นปี', years, r => r.year, k => 'ปี ' + k) || '<div class="muted">—</div>'}</div>
       <div><h4>แยกตามหลักสูตร / กลุ่ม</h4>${grid('หลักสูตร/กลุ่ม', progs, r => r.program, k => k) || '<div class="muted">—</div>'}</div>
@@ -5627,7 +5633,34 @@ function msRender() {
   document.querySelectorAll('[data-msp]').forEach(b => b.onclick = () => { MS.page = Number(b.dataset.msp); msRender(); });
   document.querySelectorAll('[data-mso]').forEach(a => a.onclick = e => { e.preventDefault(); MS.open[a.dataset.mso] = !MS.open[a.dataset.mso]; msRender(); });
   document.querySelectorAll('[data-msv]').forEach(b => b.onclick = () => openProfile(b.dataset.msv));
+  msCharts(B0, years, progs, CR);
   $('msQ').oninput = e => { MS.q = e.target.value; MS.page = 0; const pos = e.target.selectionStart; msRender(); $('msQ').focus(); $('msQ').setSelectionRange(pos, pos); };
+}
+let MS_CH = [];
+/** กราฟแท่ง: ชั้นปี / หลักสูตร (ซ้อน: มีวิชาหล่น · ไม่มี · ไม่มีไฟล์ REG) + รายวิชาที่หล่น (ซ้อนตามชั้นปี) */
+function msCharts(B0, years, progs, CR) {
+  if (!window.Chart) { const a = arguments; LIB.need('chart').then(ok => ok && $('msC1') && msCharts.apply(null, a)); return; }
+  MS_CH.forEach(c => { try { c.destroy(); } catch (e) {} }); MS_CH = [];
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#888';
+  const tip = { backgroundColor: css('--surface'), titleColor: css('--text'), bodyColor: css('--text-2'), borderColor: css('--border'), borderWidth: 1, padding: 10, usePointStyle: true };
+  const leg = { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10, color: css('--text-2') } };
+  const ax = (stack, hor) => ({ x: { stacked: stack, grid: { display: !!hor, color: css('--grid') }, ticks: { color: css('--text-2'), precision: 0 }, border: { display: false } }, y: { stacked: stack, grid: { display: !hor, color: css('--grid') }, ticks: { color: css('--text-2'), precision: 0, autoSkip: false }, border: { display: false } } });
+  const stat = L => [L.filter(r => r.status === 'mis').length, L.filter(r => r.status === 'ok').length, L.filter(r => r.status === 'nodata' || r.status === 'noplan').length];
+  const DS = [['มีวิชาหล่น', css('--critical')], ['ไม่มีวิชาหล่น', css('--good')], ['ยังตรวจไม่ได้', css('--border')]];
+  const stackBar = (id, labels, groups, hor, keys) => {
+    const S = groups.map(stat);
+    MS_CH.push(new Chart($(id), { type: 'bar', data: { labels, datasets: DS.map(([l, c], i) => ({ label: l, data: S.map(x => x[i]), backgroundColor: c, borderRadius: 4, maxBarThickness: 38 })) },
+      options: { indexAxis: hor ? 'y' : 'x', responsive: true, maintainAspectRatio: false, scales: ax(true, hor), plugins: { legend: leg, tooltip: Object.assign({ mode: 'index', intersect: false }, tip) },
+        onClick: (e, el) => { if (!el.length) return; const k = keys[el[0].index]; if (hor) MS.prog = MS.prog === k ? '' : k; else MS.y = MS.y === String(k) ? '' : String(k); MS.page = 0; msRender(); } } }));
+  };
+  stackBar('msC1', years.map(y => 'ปี ' + y), years.map(y => B0.filter(r => r.year === y)), false, years);
+  stackBar('msC2', progs.map(p => { const i = p.lastIndexOf(' '); return p.length > 18 && i > 0 ? [p.slice(0, i), p.slice(i + 1)] : p; }), progs.map(p => B0.filter(r => r.program === p)), true, progs);
+  const top = CR.slice(0, 12), ys = [...new Set(top.flatMap(x => Object.keys(x.years)))].sort();
+  const pal = ['#c0392b', '#e67e22', '#d4ac0d', '#27ae60', '#2e86c1', '#8e44ad'];
+  if (top.length) MS_CH.push(new Chart($('msC3'), { type: 'bar', data: { labels: top.map(x => x.code + ' ' + (x.name.length > 26 ? x.name.slice(0, 25) + '…' : x.name)), datasets: ys.map((y, i) => ({ label: 'ปี ' + y, data: top.map(x => x.years[y] || 0), backgroundColor: pal[i % pal.length], borderRadius: 3, maxBarThickness: 22 })) },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: ax(true, true), plugins: { legend: leg, tooltip: Object.assign({ mode: 'index', intersect: false, callbacks: { footer: it => 'รวม ' + it.reduce((a, b) => a + b.raw, 0) + ' คน' } }, tip) },
+      onClick: (e, el) => { if (!el.length) return; const k = top[el[0].index].code; MS.code = MS.code === k ? '' : k; if (MS.code) MS.f = ''; MS.page = 0; msRender(); } } }));
+  else $('msC3').parentNode.innerHTML = '<div class="empty" style="padding:20px">ไม่พบรายวิชาที่หล่น</div>';
 }
 function msScope() { return [MS.y ? 'ชั้นปีที่ ' + MS.y : 'ทุกชั้นปี', MS.prog || 'ทุกหลักสูตร', MS.f ? MS_ST[MS.f][1] : '', MS.code ? 'วิชา ' + MS.code : ''].filter(Boolean).join(' · '); }
 /** Excel: ชีต "รายวิชาที่หล่น" (1 แถว = 1 วิชาของ 1 คน) + "รายคน" + "สรุป" · PDF: รายวิชาที่หล่น */
