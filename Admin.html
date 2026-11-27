@@ -633,7 +633,9 @@ body.side-mini .side-collapse .ico{transform:rotate(180deg)}
 .el-chips{display:flex;gap:8px;flex-wrap:wrap;margin:-2px 0 10px}.el-chips button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:3px 12px;font:inherit;font-size:12.5px;cursor:pointer;color:var(--text-2);display:inline-flex;gap:4px;align-items:center}
 .el-chips button.on{border-color:var(--brand);color:var(--brand-deep);background:color-mix(in srgb,var(--brand) 8%,transparent)}.el-chips button.warn{color:#a35a00}
 .el-rv{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#1c7c3a;font-weight:600}
-.el-rvall{white-space:nowrap;font-weight:600;font-size:12.5px}.el-rvall span{color:var(--text-2)}
+.el-rvh{display:flex;align-items:center;gap:2px}.el-rvh label{display:flex;padding:3px;cursor:pointer}.el-rvm{border:0;background:transparent;cursor:pointer;color:var(--text-2);padding:3px 5px;border-radius:6px;font-size:13px;line-height:1}.el-rvm:hover{background:var(--surface-2)}.el-rvm .ico{width:15px;height:15px}
+.el-rvn{display:block;font-size:11px;color:var(--muted);font-weight:500;white-space:nowrap}
+.el-rvpop{position:absolute;z-index:500;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;display:flex;flex-direction:column;min-width:230px}.el-rvpop button{font:inherit;font-size:14px;text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--text)}.el-rvpop button:hover:not([disabled]){background:var(--surface-2)}.el-rvpop button[disabled]{opacity:.45;cursor:default}
 .el-t tr.el-done td{background:rgba(12,163,12,.035)}.el-t tr.el-op td{border-bottom-color:transparent}
 .el-tog{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--border);border-radius:999px;background:var(--surface);padding:3px 8px;cursor:pointer;font:inherit;font-size:12px;color:var(--text-2)}
 .el-tog .ico{width:12px;height:12px;transform:rotate(-90deg)}.el-op .el-tog .ico{transform:rotate(90deg)}
@@ -930,7 +932,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
-  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 27/11/69 ติ๊กทั้งหน้า</small></span></button>
+  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 27/11/69 ติ๊กทั้งหน้า#2</small></span></button>
 </aside>
 <div class="side-overlay" id="sideOverlay"></div>
 <div class="shell-main">
@@ -4640,7 +4642,7 @@ function elRender() {
     ${elBoxesHtml()}
     ${elDiffHtml()}${elViewBar(R, PG)}
     ${EL.mcode ? `<div class="el-chips"><button class="on" onclick="EL.mcode='';elRender()">✕ วิชา ${esc(EL.mcode)} (ยังไม่ลงทะเบียน/ติด F)</button></div>` : ''}` +
-    (EL.view === 'grid' ? elGridHtml(PG, R) : EL.view === 'rank' ? elRankHtml(R) : (`<div class="table-wrap" style="max-height:70vh"><table class="t el-t"><thead><tr><th style="width:86px">${canW && PG.rows.length ? `<label class="el-rv el-rvall" title="ติ๊ก/ยกเลิก ตรวจทานทุกคนในหน้านี้ (${PG.rows.length} คน)"><input type="checkbox" class="chk" id="elRvAll"><span>ทั้งหน้า</span></label>` : 'ตรวจทาน'}</th><th>นักศึกษา</th><th>ผล</th><th>ไทม์ไลน์แผนการศึกษา</th><th>รายวิชา F</th><th>ขาดตรงไหน</th><th></th></tr></thead><tbody>` +
+    (EL.view === 'grid' ? elGridHtml(PG, R) : EL.view === 'rank' ? elRankHtml(R) : (`<div class="table-wrap" style="max-height:70vh"><table class="t el-t"><thead><tr><th style="width:96px">${canW && PG.rows.length ? `<div class="el-rvh"><label title="ติ๊ก/ยกเลิก ตรวจทานทุกคนในหน้านี้ (${PG.rows.length} คน)"><input type="checkbox" class="chk" id="elRvAll"></label><button type="button" class="el-rvm" id="elRvMenu" aria-label="ตัวเลือกการเลือก" title="ตัวเลือกการเลือก">▾</button><button type="button" class="el-rvm" onclick="elLoad()" aria-label="โหลดใหม่" title="โหลดผลตรวจใหม่"><i class="ico" data-i="refresh"></i></button></div><small class="el-rvn" id="elRvN">ตรวจทาน</small>` : 'ตรวจทาน'}</th><th>นักศึกษา</th><th>ผล</th><th>ไทม์ไลน์แผนการศึกษา</th><th>รายวิชา F</th><th>ขาดตรงไหน</th><th></th></tr></thead><tbody>` +
     (PG.rows.length ? PG.rows.map(r => elRowHtml(r, canW)).join('') : '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">ไม่มีรายการ</td></tr>') + '</tbody></table></div>')) + (EL.view === 'rank' ? '' : elPagerHtml(PG, R.length));
   if ($('elOv')) $('elOv').ontoggle = e => { if (EL.ov === e.target.open) return; EL.ov = e.target.open; elPrefsSave(); if (EL.ov && EL.cmpId && !EL.cmp) elCmpLoad(EL.cmpId); elRender(); };
   document.querySelectorAll('[data-elsc]').forEach(b => b.onclick = () => { const [p, m] = b.dataset.elsc.split('§');   // '*' = คงค่าเดิม
@@ -4947,7 +4949,7 @@ function elRowHtml(r, canW) {
   const oF = elOpenF(r), fx = elFixed(r), oI = elOpenI(r);
   const fCell = oF.length || fx.length || oI.length ? `${oF.length ? `<span class="el-fb bad" title="${esc(oF.map(x => x.code + ' ' + x.name).join('\n'))}">F ค้าง ${oF.length}</span>` : ''}${oI.length ? `<span class="el-fb warn">I ${oI.length}</span>` : ''}${fx.length ? `<span class="el-fb ok" title="${esc(fx.map(x => x.code + ' → ' + x.now).join('\n'))}">แก้แล้ว ${fx.length}</span>` : ''}` : '<span class="muted">ไม่มี</span>';
   const main = `<tr class="${open ? 'el-op' : ''}${rv.done ? ' el-done' : ''}">
-    <td><label class="el-rv" title="${rv.done ? 'ตรวจทานโดย ' + esc(rv.by) + ' ' + esc(rv.at) : 'ติ๊กเมื่อตรวจทานแล้ว'}"><input type="checkbox" class="chk" data-erv="${esc(r.id)}" ${rv.done ? 'checked' : ''} ${canW ? '' : 'disabled'}><span>${rv.done ? 'แล้ว' : ''}</span></label></td>
+    <td><label class="el-rv" title="${rv.done ? 'ตรวจทานโดย ' + esc(rv.by) + ' ' + esc(rv.at) : 'ติ๊กเมื่อตรวจทานแล้ว'}"><input type="checkbox" class="chk" data-erv="${esc(r.id)}" ${rv.done ? 'checked' : ''} ${canW ? '' : 'disabled'}><span>${rv.done ? 'ตรวจแล้ว' : ''}</span></label></td>
     <td><a href="#" class="el-nm" data-elp="${esc(r.id)}" title="ตรวจทีละคน: แผนเทียบจริง · หน่วยกิตตามหมวด">${esc(r.name)}</a> ${elLightsHtml(r)}<div class="muted" style="font-size:12px">${esc(r.id)} · ปี ${esc(r.year)} · ${esc(r.program)}${EL.mode === 'overdue' && r.studied ? ' · ศึกษาปีที่ ' + r.studied : ''}</div>
       <div class="muted" style="font-size:12px">GPAX ${r.gpax === '' || r.gpax == null ? '–' : Number(r.gpax).toFixed(2)} · REG ${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.date || 'เปิด')}</a>` : esc(r.date || '–')}</div>${(EL.mode === 'grad' || EL.mode === 'overdue') && r.comp ? `<div class="el-xb">${elXChips(r)}</div>` : ''}</td>
     <td><span class="st-chip ${EL_ST[f.st][0]}">${EL_ST[f.st][1]}</span>${changed ? `<div class="el-man">ระบบ: ${r.status === 'ok' ? 'ครบ' : 'ไม่ครบ'} → แก้โดยเจ้าหน้าที่</div>` : f.nOv ? `<div class="el-man">แก้ผลรายข้อ ${f.nOv} ข้อ</div>` : ''}${st ? '<div class="el-stale"><i class="ico" data-i="alert"></i> มีไฟล์ REG ใหม่</div>' : ''}${elChgHtml(elChg(r))}</td>
@@ -4978,8 +4980,9 @@ function elRowHtml(r, canW) {
 function elBind() {
   document.querySelectorAll('[data-elv]').forEach(b => b.onclick = () => openProfile(b.dataset.elv));
   document.querySelectorAll('[data-eop]').forEach(b => b.onclick = () => { const id = b.dataset.eop; EL.open.has(id) ? EL.open.delete(id) : EL.open.add(id); elRender(); });
-  const rvAll = () => { const a = $('elRvAll'); if (!a) return; const L = [...document.querySelectorAll('[data-erv]')], n = L.filter(c => c.checked).length; a.checked = !!L.length && n === L.length; a.indeterminate = n > 0 && n < L.length; a.nextElementSibling.textContent = n ? 'ทั้งหน้า ' + n + '/' + L.length : 'ทั้งหน้า'; };
-  document.querySelectorAll('[data-erv]').forEach(c => c.onchange = () => { const r = elRow(c.dataset.erv); elRev(r).done = c.checked; elSave([r]); const tr = c.closest('tr'); tr && tr.classList.toggle('el-done', c.checked); c.nextElementSibling.textContent = c.checked ? 'แล้ว' : ''; rvAll(); });
+  const rvAll = () => { const a = $('elRvAll'); if (!a) return; const L = [...document.querySelectorAll('[data-erv]')], n = L.filter(c => c.checked).length; a.checked = !!L.length && n === L.length; a.indeterminate = n > 0 && n < L.length; $('elRvN').textContent = n ? 'ตรวจแล้ว ' + n + '/' + L.length : 'ตรวจทาน'; };
+  document.querySelectorAll('[data-erv]').forEach(c => c.onchange = () => { const r = elRow(c.dataset.erv); elRev(r).done = c.checked; elSave([r]); const tr = c.closest('tr'); tr && tr.classList.toggle('el-done', c.checked); c.nextElementSibling.textContent = c.checked ? 'ตรวจแล้ว' : ''; rvAll(); });
+  if ($('elRvMenu')) $('elRvMenu').onclick = e => { e.stopPropagation(); elRvMenu(e.currentTarget); };
   if ($('elRvAll')) { rvAll(); $('elRvAll').onchange = async e => { const on = e.target.checked, L = [...document.querySelectorAll('[data-erv]')].map(c => elRow(c.dataset.erv)).filter(r => r && !!elRev(r).done !== on);
     if (!L.length) return;
     const bad = L.filter(r => elFinal(r).st !== 'ok').length;
@@ -5059,6 +5062,21 @@ function elSave(rows) {
     EL.data.rows.forEach(r => { const x = res[r.id]; if (!x) return; if (elSaveQ.has(r.id)) Object.assign(elRev(r), { by: x.by, at: x.at }); else r.rev = x; });   // ไม่ทับค่าที่ผู้ใช้เพิ่งแก้และยังรอบันทึก
     if ($('pElig').classList.contains('on') && !document.activeElement.matches('.el-note,#elQ')) elRender();
   }, 500);
+}
+/** เมนูเลือก (แบบกล่องจดหมาย): ทั้งหน้า / ทั้งหมดทุกหน้า / เฉพาะคนที่พร้อม / ยกเลิก */
+function elRvMenu(btn) {
+  document.querySelectorAll('.el-rvpop').forEach(x => x.remove());
+  const A = elRows(), pg = [...document.querySelectorAll('[data-erv]')].map(c => elRow(c.dataset.erv)).filter(Boolean), okA = A.filter(r => elFinal(r).st === 'ok');
+  const M = [['page1', 'เลือกทั้งหน้านี้', pg.length], ['page0', 'ยกเลิกทั้งหน้านี้', pg.length], ['all1', 'เลือกทั้งหมดทุกหน้า', A.length], ['ok1', 'เลือกเฉพาะคนที่ครบ / พร้อม', okA.length], ['all0', 'ยกเลิกทั้งหมด', A.filter(r => elRev(r).done).length]];
+  const d = document.createElement('div'); d.className = 'el-rvpop';
+  d.innerHTML = M.map(([k, t, n]) => `<button type="button" data-k="${k}" ${n ? '' : 'disabled'}>${t} <span class="muted">(${n})</span></button>`).join('');
+  document.body.appendChild(d); const b = btn.getBoundingClientRect(); d.style.left = (b.left + window.scrollX) + 'px'; d.style.top = (b.bottom + window.scrollY + 4) + 'px';
+  const close = () => { d.remove(); document.removeEventListener('click', close); }; setTimeout(() => document.addEventListener('click', close), 0);
+  d.querySelectorAll('button').forEach(x => x.onclick = async () => { close(); const k = x.dataset.k, on = k.slice(-1) === '1';
+    let L = (k.startsWith('page') ? pg : k.startsWith('ok') ? okA : A).filter(r => !!elRev(r).done !== on); if (!L.length) return toast('ไม่มีรายการที่ต้องเปลี่ยน', 1500, 'small');
+    const bad = on ? L.filter(r => elFinal(r).st !== 'ok').length : 0;
+    if ((L.length > 30 || bad) && !await ask(`${on ? 'ติ๊กตรวจทาน' : 'ยกเลิกตรวจทาน'} ${L.length} คน?` + (bad ? `\nในนี้มี ${bad} คนที่ยังไม่ผ่าน/ต้องดู — ควรเปิดดูรายละเอียดก่อนยืนยัน` : ''))) return;
+    L.forEach(r => elRev(r).done = on); elSave(L); elRender(); toast((on ? 'ติ๊กตรวจทานแล้ว ' : 'ยกเลิกตรวจทาน ') + L.length + ' คน', 1800, 'small'); });
 }
 async function elBulkDone() {
   const A = elRows(), L = A.filter(r => !(r.rev && r.rev.done));
