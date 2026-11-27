@@ -2014,7 +2014,7 @@ const ELIG_TYPES = {
   regDate:    { label: 'ไฟล์ตรวจสอบจบ (REG) อายุไม่เกิน', p: 'num', unit: 'วัน' }
 };
 const ELIG_MODES = ['intern4', 'intern6', 'grad', 'overdue'];
-const COMP_CODE = '000160', ELIG_VER = 7;
+const COMP_CODE = '000160', ELIG_VER = 8;
 const isFreeElec_ = cat => /เลือก\s*เสร/.test(String(cat || ''));
 /** รหัสวิชาบังคับตามแผน (รวมรหัสทดแทน) → รหัสหลักในแผน */
 function planReqCodes_(P, extra) {
@@ -2172,6 +2172,9 @@ function eligComputeRaw_(mode, year) {
   const CFG = eligCfg_(), cfg = CFG[mode];
   if (!cfg) throw new Error('โหมดไม่ถูกต้อง');
   const target = Number(year) || cfg.year, CO = cfg.conds.filter(c => c.on);
+  // รายวิชาที่ตั้ง "ไม่ต้องตรวจ" ในเงื่อนไขแผน → ตัดออกจากโหมดนี้ทั้งหมด (ไม่แสดงในไทม์ไลน์ / รายวิชาที่ขาด / ตารางติ๊ก)
+  const SKIPM = {}; CO.forEach(k => { if (k.type === 'planReg' && k.p) String(k.p.skip || '').toUpperCase().split(/[\s,;]+/).filter(Boolean).forEach(q => SKIPM[q] = 1); });
+  const notSkip = x => ![x.code].concat(x.alts || []).some(q => SKIPM[String(q).toUpperCase()]);
   const needPlan = CO.some(c => c.type === 'planReg' || c.type === 'planPass');
   const st = readTable_(SH.STUDENTS), H = idx_(st.headers);
   const gc = gradChkMap_(), cs = coursesById_(), plan = planFillTerms_(readPlan_(), cs);
@@ -2195,7 +2198,7 @@ function eligComputeRaw_(mode, year) {
     const P0 = plan[g.cur], nMaj = s => String(s || '').replace(/\s|สาขา(วิชา)?|\(.*?\)/g, '').toLowerCase(), sm = nMaj(base.major);
     // วิชาเฉพาะสาขาเน้น (คอลัมน์ "สาขาเน้น" ในแผน) ใช้ตรวจเฉพาะนักศึกษาสาขานั้น
     const majOk = x => { if (!x.maj) return true; if (!sm) return false; return String(x.maj).split(/[,/]+/).some(m => { const k = nMaj(m); return k && (sm.indexOf(k) >= 0 || k.indexOf(sm) >= 0); }); };
-    const P = P0 && Object.assign({}, P0, { courses: P0.courses.filter(majOk) });
+    const P = P0 && Object.assign({}, P0, { courses: P0.courses.filter(x => majOk(x) && notSkip(x)) });
     const notes = []; if (P0 && !sm && P0.courses.some(x => x.maj)) notes.push('ยังไม่ระบุสาขาเน้น — ยังไม่ได้ตรวจรายวิชาเฉพาะสาขา');
     const kc = CO.find(x => x.type === 'computer'), km = CO.find(x => x.type === 'misCat');
     const X = gradExtra_(c, g, P, kc && kc.p.codes, km && km.p.codes, id);
