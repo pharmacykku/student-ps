@@ -916,7 +916,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
-  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 26/11/69 วิชาหล่น+กราฟ</small></span></button>
+  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 27/11/69 ชื่อ-สกุล</small></span></button>
 </aside>
 <div class="side-overlay" id="sideOverlay"></div>
 <div class="shell-main">
@@ -1132,6 +1132,13 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
         <button class="btn primary" id="gcGo" onclick="gcSave()"><i class="ico" data-i="save"></i> บันทึกเข้าระบบ</button>
       </div>
       <div class="table-wrap" style="max-height:60vh"><table class="t" id="tblGC"></table></div>
+    </div>
+    <div class="card w-only" id="ncCard">
+      <h3>ตรวจชื่อ-สกุล เทียบไฟล์ตรวจสอบจบ</h3>
+      <p class="sub">เทียบชื่อ-สกุลในฐานข้อมูลกับชื่อในไฟล์ตรวจสอบจบ (REG) ล่าสุดของแต่ละคน · เลือกรายการที่ต้องการใช้ชื่อตามไฟล์ · รายการที่ชื่อในไฟล์อาจอ่านไม่ครบ (ไม่มีนามสกุล) จะไม่ถูกเลือกไว้ — ควรนำเข้าไฟล์ใหม่</p>
+      <div class="toolbar"><button class="btn primary" onclick="ncLoad()"><i class="ico" data-i="search"></i> ตรวจชื่อ-สกุล</button>
+        <button class="btn" onclick="ncRepair()" title="แก้อักษรไทยเพี้ยนจาก PDF เช่น ํา → ำ, วรรณยุกต์สลับที่ (ไม่เปลี่ยนตัวสะกด)"><i class="ico" data-i="refresh"></i> ซ่อมอักษรไทยเพี้ยน</button><div class="spacer"></div><span id="ncInfo" class="muted" style="font-size:13px"></span></div>
+      <div id="ncBody"></div>
     </div>
   </section>
 
@@ -3569,25 +3576,41 @@ const GC_GRADE_PT = { 'A': 4, 'B+': 3.5, 'B': 3, 'C+': 2.5, 'C': 2, 'D+': 1.5, '
 const GC_GRADE_RE = /^\*?(A|B\+|B|C\+|C|D\+|D|F|S|U|W|I|P|IP|AU|X|--)$/;
 
 /** แปลงหน้าหนึ่งของ pdf.js เป็นบรรทัด (จัดกลุ่มตามแกน y) */
+const TH_PUA = { F700: 'ฐ', F701: 'ิ', F702: 'ี', F703: 'ึ', F704: 'ื', F705: '่', F706: '้', F707: '๊', F708: '๋', F709: '์', F70A: '่', F70B: '้', F70C: '๊', F70D: '๋', F70E: '์', F70F: 'ญ', F710: 'ั', F711: 'ํ', F712: '็', F713: '่', F714: '้', F715: '๊', F716: '๋', F717: '์', F718: 'ุ', F719: 'ู', F71A: 'ฺ' };
+/** แก้อักษรไทยเพี้ยนจาก PDF: อักษรในช่วง Private Use (ฟอนต์ไทยเก่า) · ํ+า → ำ · วรรณยุกต์สลับที่สระบน · ช่องว่างหน้าสระ/วรรณยุกต์ */
+function thFix(s) {
+  return String(s == null ? '' : s).replace(/[-]/g, c => TH_PUA[c.charCodeAt(0).toString(16).toUpperCase()] || '')
+    .replace(/ํ([่-๋]?)า/g, '$1ำ').replace(/([่-๋])ํา/g, '$1ำ')
+    .replace(/([่-์])([ัิ-ื็])/g, '$2$1')
+    .replace(/([ก-๎])\s+(?=[ะ-ฺๅ็-๎])/g, '$1').replace(/([ัเ-ไ])\s+(?=[ก-ฮ])/g, '$1')
+    .replace(/\s+/g, ' ').trim();
+}
+const TH_MARK = /^[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]+$/;
 async function gcPageLines(page) {
   const tc = await page.getTextContent();
   const rows = [];
   tc.items.forEach(it => {
     if (!it.str || !it.str.trim()) return;
-    const x = it.transform[4], y = it.transform[5], w = it.width || 0;
-    let r = rows.find(r => Math.abs(r.y - y) < 2.5);
+    const x = it.transform[4], y = it.transform[5], w = it.width || 0, fs = Math.hypot(it.transform[0], it.transform[1]) || 10;
+    const s = thFix(it.str), mark = TH_MARK.test(s);
+    // สระบน/ล่าง วรรณยุกต์ อาจอยู่สูง/ต่ำกว่าบรรทัด → เผื่อระยะตามขนาดตัวอักษร
+    let r = rows.find(r => Math.abs(r.y - y) < Math.max(2.5, (mark ? 0.6 : 0.3) * fs));
     if (!r) { r = { y, items: [] }; rows.push(r); }
-    r.items.push({ x, w, s: it.str });
+    r.items.push({ x, w, fs, s, mark });
   });
   rows.sort((a, b) => b.y - a.y);
   return rows.map(r => {
-    r.items.sort((a, b) => a.x - b.x);
+    // ตัวอักษรหลักเรียงตามแนวนอน · สระ/วรรณยุกต์ที่แยกชิ้น ใส่ต่อหลังตัวอักษรที่มันอยู่ด้านบน/ล่าง
+    const base = r.items.filter(i => !i.mark).sort((a, b) => a.x - b.x), marks = r.items.filter(i => i.mark);
+    marks.forEach(m => { let k = -1; base.forEach((b, i) => { if (b.x <= m.x + 0.5) k = i; }); if (k < 0) base.unshift(m); else (base[k].add = base[k].add || []).push(m); });
     let out = '', end = null;
-    r.items.forEach(it => {
-      if (end !== null) out += (it.x - end > 1.5 ? ' ' : '');
-      out += it.s; end = it.x + it.w;
+    base.forEach(it => {
+      const gap = end === null ? 0 : it.x - end;
+      if (end !== null && gap > Math.max(1.5, 0.2 * (it.fs || 10))) out += ' ';
+      out += it.s + (it.add || []).sort((a, b) => a.x - b.x).map(m => m.s).join('');
+      end = Math.max(end === null ? -1e9 : end, it.x + it.w);
     });
-    return out.replace(/\s+/g, ' ').trim();
+    return thFix(out);
   });
 }
 
@@ -3617,7 +3640,7 @@ function gcParse(lines) {
     R.id = head[1];
     let rest = head[2].trim();
     const ym = rest.match(/(\d+)\s*$/); if (ym) R.year = Number(ym[1]);
-    R.name = rest.replace(/\s*ช\S*\s*\S*\s*ปี\s*\d+\s*$/, '').replace(/\s*\d+\s*$/, '').trim();
+    R.name = thFix(rest.replace(/\s*ช\s*ั?\s*้?\s*น\s*ปี\s*(ที่)?\s*\d+\s*$/, '').replace(/\s*(ชั้นปี|ปีที่|ปี)\s*$/, '').replace(/\s*\d+\s*$/, ''));
   }
   const cur = txt.match(/(\d{12})\s*:\s*([^\n]*?เภสัชศาสตรบัณฑิต[^\n]*?)(?:\s+คณะ|\n|$)/);
   if (cur) { R.curCode = cur[1]; R.curName = cur[2].trim(); }
@@ -3760,6 +3783,40 @@ function gcNameHtml(x) {
   if (x.nameFixed) return `<div class="ok" style="font-size:12px;margin-top:3px"><i class="ico" data-i="check"></i> ปรับชื่อตามไฟล์แล้ว: ${esc(d.file)}</div>`;
   return `<div class="gc-nd"><div><span class="muted">ฐานข้อมูล:</span> ${esc(d.db || '–')}</div><div><span class="muted">ในไฟล์:</span> <b>${esc(d.file)}</b></div>
     <button class="btn sm primary" onclick="gcFixName('${esc(d.id)}')"><i class="ico" data-i="check"></i> ยืนยัน ใช้ชื่อตามไฟล์</button></div>`;
+}
+let NC = null;
+async function ncLoad() {
+  $('ncBody').innerHTML = '<div class="loading"><div class="spin"></div>กำลังเทียบชื่อ…</div>';
+  NC = await call('adminNameCheck').catch(e => { $('ncBody').innerHTML = `<div class="empty">${esc(e.message || e)}</div>`; return null; }); if (!NC) return;
+  NC.rows.forEach(r => r.sel = !r.short); ncRender();
+}
+function ncRender() {
+  const R = NC.rows, sel = R.filter(r => r.sel).length;
+  $('ncInfo').textContent = `ตรวจ ${NC.n.toLocaleString()} คน · ไม่ตรง/ต้องแก้ ${R.length} คน` + (NC.noLast ? ` · ไม่มีนามสกุล ${NC.noLast} คน` : '');
+  if (!R.length) { $('ncBody').innerHTML = '<div class="empty" style="padding:18px"><i class="ico" data-i="check-circle"></i> ชื่อ-สกุลตรงกับไฟล์ตรวจสอบจบทุกคน</div>'; return; }
+  const D = { first: 'ชื่อต่างกัน', last: 'นามสกุลต่างกัน', both: 'ต่างทั้งชื่อและนามสกุล' };
+  $('ncBody').innerHTML = `<div class="toolbar"><label class="row" style="gap:6px"><input type="checkbox" class="chk" id="ncAll" ${sel === R.length ? 'checked' : ''}> เลือกทั้งหมด</label><span class="muted" style="font-size:13px">เลือก ${sel} คน</span><div class="spacer"></div>
+      <button class="btn" onclick="XP.open(ncExport, { format: 'xlsx' })"><i class="ico" data-i="file-sheet"></i> Excel</button>
+      <button class="btn primary" onclick="ncApply()" ${sel ? '' : 'disabled'}><i class="ico" data-i="check"></i> ใช้ชื่อตามไฟล์ (${sel})</button></div>
+    <div class="table-wrap" style="max-height:60vh"><table class="t"><thead><tr><th></th><th>รหัสนักศึกษา</th><th class="num">ปี</th><th>หลักสูตร</th><th>ในฐานข้อมูล</th><th>ในไฟล์ตรวจสอบจบ</th><th>ต่างกันที่</th><th>ไฟล์วันที่</th></tr></thead><tbody>
+    ${R.map((r, i) => `<tr><td><input type="checkbox" class="chk" data-nci="${i}" ${r.sel ? 'checked' : ''}></td><td>${esc(r.id)}</td><td class="num">${esc(r.year)}</td><td>${esc(r.program)}</td>
+      <td style="white-space:normal">${esc(r.db || '–')}</td><td style="white-space:normal"><b>${esc(r.file)}</b>${r.noLast ? '<div class="bad" style="font-size:12px">ฐานข้อมูลไม่มีนามสกุล — นำเข้าไฟล์ตรวจสอบจบใหม่ หรือแก้ในหน้ารายชื่อ</div>' : r.short ? '<div class="bad" style="font-size:12px">ชื่อในไฟล์อาจอ่านไม่ครบ — นำเข้าไฟล์ใหม่</div>' : ''}</td>
+      <td>${r.noLast ? '<span class="badge">ไม่มีนามสกุล</span>' : r.charBad ? '<span class="badge">อักษรเพี้ยน</span>' : esc(D[r.same])}</td><td class="muted">${esc(r.date)}</td></tr>`).join('')}</tbody></table></div>`;
+  $('ncAll').onchange = e => { R.forEach(r => r.sel = e.target.checked); ncRender(); };
+  document.querySelectorAll('[data-nci]').forEach(c => c.onchange = () => { R[c.dataset.nci].sel = c.checked; ncRender(); });
+}
+async function ncExport() { return { title: 'ชื่อ-สกุลไม่ตรงกับไฟล์ตรวจสอบจบ', headers: ['รหัสนักศึกษา', 'ชั้นปี', 'หลักสูตร', 'สถานะ', 'ชื่อในฐานข้อมูล', 'ชื่อในไฟล์ตรวจสอบจบ', 'หมายเหตุ', 'วันที่ไฟล์'], rows: NC.rows.map(r => [r.id, r.year, r.program, r.status, r.db, r.file, r.noLast ? 'ฐานข้อมูลไม่มีนามสกุล' : r.short ? 'ชื่อในไฟล์อาจอ่านไม่ครบ' : r.charBad ? 'อักษรเพี้ยน' : '', r.date]), file: 'ชื่อไม่ตรงไฟล์ตรวจสอบจบ' }; }
+async function ncApply() {
+  const L = NC.rows.filter(r => r.sel); if (!L.length) return;
+  if (!await ask(`เปลี่ยนชื่อ-สกุลในฐานข้อมูลเป็นตามไฟล์ตรวจสอบจบ ${L.length} คน?\n(บันทึกในประวัติการแก้ไข)`)) return;
+  UX.loading('กำลังปรับชื่อ…'); const r = await call('adminFixName', L.map(x => ({ id: x.id, name: x.file }))).catch(e => { toast(e.message || e); return null; }); UX.close(); if (!r) return;
+  (r.done || []).forEach(d => { const s = STU.find(y => y['รหัสนักศึกษา'] === d.id); if (s) { if (d.pre) s['คำนำหน้า'] = d.pre; s['ชื่อ'] = d.first; s['นามสกุล'] = d.last; } });
+  toast('ปรับชื่อแล้ว ' + r.n + ' คน', 2200, 'small'); try { applyFilter(); } catch (e) {} ncLoad();
+}
+async function ncRepair() {
+  if (!await ask('ซ่อมอักษรไทยเพี้ยนในชื่อ-สกุลทั้งฐานข้อมูล?\n(เช่น ํา → ำ, วรรณยุกต์สลับที่, อักษรพิเศษจาก PDF — ไม่เปลี่ยนตัวสะกด)')) return;
+  UX.loading('กำลังซ่อม…'); const r = await call('adminRepairThaiNames').catch(e => { toast(e.message || e); return null; }); UX.close(); if (!r) return;
+  toast(r.n ? 'ซ่อมแล้ว ' + r.n + ' คน' : 'ไม่พบอักษรเพี้ยน', 2200, 'small'); if (r.n) { try { await reload(true); } catch (e) {} } if (NC) ncLoad();
 }
 async function gcFixName(id) {
   const L = GC.filter(x => x.nameDiff && !x.nameFixed && (!id || x.nameDiff.id === id));

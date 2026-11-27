@@ -1268,7 +1268,16 @@ function gradCheckIndex_Raw_() {
   return o;
 }
 
-function normName_(s) { return String(s || '').replace(/^(นาย|นางสาว|นาง|น\.ส\.|Mr\.|Ms\.|Miss)\s*/i, '').replace(/\s+/g, '').trim(); }
+const TH_PUA_ = { F700: 'ฐ', F701: 'ิ', F702: 'ี', F703: 'ึ', F704: 'ื', F705: '่', F706: '้', F707: '๊', F708: '๋', F709: '์', F70A: '่', F70B: '้', F70C: '๊', F70D: '๋', F70E: '์', F70F: 'ญ', F710: 'ั', F711: 'ํ', F712: '็', F713: '่', F714: '้', F715: '๊', F716: '๋', F717: '์', F718: 'ุ', F719: 'ู', F71A: 'ฺ' };
+/** แก้อักษรไทยเพี้ยนจาก PDF: อักษรในช่วง Private Use (ฟอนต์ไทยเก่า) · ํ+า → ำ · วรรณยุกต์สลับที่สระบน · ช่องว่างหน้าสระ/วรรณยุกต์ */
+function thFix_(s) {
+  return String(s == null ? '' : s).replace(/[-]/g, c => TH_PUA_[c.charCodeAt(0).toString(16).toUpperCase()] || '')
+    .replace(/ํ([่-๋]?)า/g, '$1ำ').replace(/([่-๋])ํา/g, '$1ำ')
+    .replace(/([่-์])([ัิ-ื็])/g, '$2$1')
+    .replace(/([ก-๎])\s+(?=[ะ-ฺๅ็-๎])/g, '$1').replace(/([ัเ-ไ])\s+(?=[ก-ฮ])/g, '$1')
+    .replace(/\s+/g, ' ').trim();
+}
+function normName_(s) { return thFix_(s).replace(/^(นาย|นางสาว|นาง|น\.ส\.|Mr\.|Ms\.|Miss)\s*/i, '').replace(/\s+/g, '').trim(); }
 
 /**
  * บันทึกผลอ่านไฟล์ตรวจสอบจบ 1 คน
@@ -1277,10 +1286,43 @@ function normName_(s) { return String(s || '').replace(/^(นาย|นางส
  */
 /** ยืนยันใช้ชื่อตามไฟล์ตรวจสอบจบ (REG) → ปรับคำนำหน้า/ชื่อ/นามสกุลในฐานข้อมูล */
 function splitThName_(full) {
-  const t = String(full || '').replace(/\s+/g, ' ').trim();
+  const t = thFix_(full);
   const m = t.match(/^(นางสาว|นาย|นาง|เด็กชาย|เด็กหญิง|Mr\.?|Mrs\.?|Miss|Ms\.?)\s*(\S+)\s*(.*)$/i);
   if (m) return { pre: m[1], first: m[2], last: m[3].trim() };
   const p = t.split(' '); return { pre: '', first: p.shift() || '', last: p.join(' ') };
+}
+/** เทียบชื่อ-สกุลในฐานข้อมูลกับ "ชื่อในไฟล์" ของไฟล์ตรวจสอบจบล่าสุด (นักศึกษาทุกสถานะที่มีไฟล์) */
+function adminNameCheck(token) {
+  tabGuard_(auth_(token, true), 'pStudents');
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SH.GRADCHK); if (!sh || sh.getLastRow() < 2) return { rows: [], n: 0 };
+  const g = readTable_(SH.GRADCHK), G = idx_(g.headers), fileOf = {};
+  g.rows.forEach(r => { const id = normId_(r[0]); if (id) fileOf[id] = { name: thFix_(r[G['ชื่อในไฟล์']]), date: r[G['วันที่รายงาน REG']] instanceof Date ? Utilities.formatDate(r[G['วันที่รายงาน REG']], 'Asia/Bangkok', 'dd/MM/yyyy') : String(r[G['วันที่รายงาน REG']] || '') }; });
+  const st = readTable_(SH.STUDENTS), H = idx_(st.headers), rows = []; let n = 0, bad = 0, noLast = 0;
+  st.rows.forEach(r => {
+    const id = normId_(r[0]), f = fileOf[id] || { name: '', date: '' }; if (!id) return;
+    if (!String(r[H['นามสกุล']] || '').trim() && String(r[H['สถานะ']] || '') !== 'สำเร็จการศึกษา') { noLast++; if (!f.name || !splitThName_(f.name).last) { rows.push({ id, db: [r[H['คำนำหน้า']], r[H['ชื่อ']]].join('').trim(), file: f.name, date: f.date, year: r[H['ชั้นปี']], program: progLabel_(r, H), status: String(r[H['สถานะ']] || ''), short: true, noLast: true, same: 'last' }); return; } }
+    if (!f.name) return; n++;
+    const raw = [r[H['คำนำหน้า']], r[H['ชื่อ']], ' ', r[H['นามสกุล']]].join(''), db = raw.replace(/\s+/g, ' ').trim(), dbFix = thFix_(raw);
+    const charBad = dbFix !== db && normName_(dbFix) === normName_(f.name);
+    if (normName_(raw) === normName_(f.name) && !charBad) return;
+    const N = splitThName_(f.name), short = !N.last || N.first.length < 2;
+    if (charBad) bad++;
+    rows.push({ id, db, file: f.name, date: f.date, year: r[H['ชั้นปี']], program: progLabel_(r, H), status: String(r[H['สถานะ']] || ''), short, charBad,
+      same: normName_(String(r[H['ชื่อ']] || '')) === normName_(N.first) ? 'last' : normName_(String(r[H['นามสกุล']] || '')) === normName_(N.last) ? 'first' : 'both' });
+  });
+  return { rows, n, bad, noLast };
+}
+/** แก้อักษรไทยเพี้ยน (จาก PDF) ในคำนำหน้า/ชื่อ/นามสกุล ของฐานข้อมูลนักศึกษา — ไม่เปลี่ยนตัวสะกด */
+function adminRepairThaiNames(token) {
+  const s = authW_(token); tabGuard_(s, 'pStudents');
+  return withLock_(() => {
+    const st = sheet_(SH.STUDENTS), v = st.getDataRange().getValues(), H = idx_(v[0]), cols = ['คำนำหน้า', 'ชื่อ', 'นามสกุล'].filter(k => H[k] !== undefined); let n = 0; const ids = [];
+    for (let i = 1; i < v.length; i++) { let ch = false; cols.forEach(k => { const a = String(v[i][H[k]] == null ? '' : v[i][H[k]]), b = thFix_(a); if (a && a !== b) { st.getRange(i + 1, H[k] + 1).setValue(b); ch = true; } }); if (ch) { n++; ids.push(normId_(v[i][0])); } }
+    const g = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SH.GRADCHK);
+    if (g && g.getLastRow() > 1) { const GH = idx_(g.getRange(1, 1, 1, g.getLastColumn()).getValues()[0]), c = GH['ชื่อในไฟล์']; if (c !== undefined) { const r = g.getRange(2, c + 1, g.getLastRow() - 1, 1), a = r.getValues(), b = a.map(x => [thFix_(x[0])]); if (a.some((x, i) => String(x[0]) !== b[i][0])) r.setValues(b); } }
+    if (n) log_(s.u, 'ซ่อมอักษรไทยในชื่อ', '', n + ' คน: ' + ids.slice(0, 30).join(', '));
+    return { n, ids };
+  });
 }
 function adminFixName(token, items) {
   const s = authW_(token); tabGuard_(s, 'pStudents');
@@ -1302,7 +1344,7 @@ function adminFixName(token, items) {
   });
 }
 function adminIngestGradCheck(token, rec, pdf, opt) {
-  const s = authW_(token);
+  const s = authW_(token); if (rec) rec.name = thFix_(rec.name);
   opt = opt || {};
   const id = normId_(rec.id);
   if (!/^\d{9}-\d$/.test(id)) throw new Error('อ่านรหัสนักศึกษาจากไฟล์ไม่ได้');
@@ -1316,7 +1358,7 @@ function adminIngestGradCheck(token, rec, pdf, opt) {
     let f = st.getRange('A:A').createTextFinder(id).matchEntireCell(true).findNext();
     if (!f) {
       if (!opt.create) return { ok: false, id, name: rec.name, reason: 'ไม่พบรหัสนี้ในฐานข้อมูล' };
-      const m = String(rec.name).match(/^(นาย|นางสาว|นาง)?\s*(\S+)\s*(.*)$/) || [];
+      const m = String(rec.name).match(/^(นางสาว|นาย|นาง)?\s*(\S+)\s*(.*)$/) || [];
       const row = hdr.map(h => '');
       const set = (h, v) => { if (H[h] !== undefined) row[H[h]] = v; };
       set('รหัสนักศึกษา', id); set('คำนำหน้า', m[1] || ''); set('ชื่อ', m[2] || rec.name); set('นามสกุล', m[3] || '');
