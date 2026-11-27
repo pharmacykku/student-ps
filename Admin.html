@@ -916,7 +916,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
-  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 27/11/69 ชื่อ-สกุล</small></span></button>
+  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 27/11/69 #2</small></span></button>
 </aside>
 <div class="side-overlay" id="sideOverlay"></div>
 <div class="shell-main">
@@ -4321,7 +4321,7 @@ function elRuleText() {
 const EL_LV = { pass: ['ต้องผ่านครบ', 'ผ่าน'], reg: ['ต้องลงครบ', 'ลง'], '': ['–', '–'] };
 function elPlanDerive(p) { const lv = {}; Object.keys(p.lv || {}).forEach(k => { if (p.lv[k] === 'pass' || p.lv[k] === 'reg') lv[k] = p.lv[k]; });
   const years = [...new Set(Object.keys(lv).map(k => +k[0]))].sort(), tx = []; years.forEach(y => [1, 2, 3].forEach(t => { if (!lv[y + '/' + t]) tx.push(y + '/' + t); }));
-  return { lv, years, tx, pend: p.pend === 'note' ? 'note' : 'fail', note: p.note || '' }; }
+  return { lv, years, tx, pend: p.pend === 'note' ? 'note' : 'fail', note: p.note || '', skip: p.skip || '' }; }
 function elPlanSum(lv) { const g = v => { const by = {}; Object.keys(lv).filter(k => lv[k] === v).forEach(k => (by[k[0]] = by[k[0]] || []).push(k[2]));
     const full = Object.keys(by).filter(y => by[y].includes('1') && by[y].includes('2')).map(Number).sort(), rng = [];
     full.forEach(y => { const L = rng[rng.length - 1]; if (L && L[1] === y - 1) L[1] = y; else rng.push([y, y]); });
@@ -4334,9 +4334,10 @@ function elPlanGrid(c, adm) { const lv = c.p.lv || {}, dis = adm ? '' : 'disable
       ${[1, 2, 3].map(t => { const k = lv[y + '/' + t] || ''; return `<button type="button" class="pl-c lv-${k || 'no'}" data-plc="${c.id}|${y}/${t}" ${dis} title="ปี ${y} ภาค ${t}${t === 3 ? ' (ภาคการศึกษาพิเศษ)' : ''}: ${EL_LV[k][0]} · กดเพื่อเปลี่ยน">${EL_LV[k][1]}</button>`; }).join('')}</div>`; }).join('')}
     <div class="pl-lg"><span class="pl-c lv-pass">ผ่าน</span> ต้องผ่านครบ (ลงทะเบียน + เกรดผ่าน) <span class="pl-c lv-reg">ลง</span> ต้องลงครบ (ไม่นับเกรด) <span class="pl-c lv-no">–</span> ไม่ตรวจ</div></div>
     <div class="cd-p cd-pd">รอเกรดในช่อง "ผ่าน" <select data-cpd="${c.id}" ${dis}><option value="fail" ${c.p.pend !== 'note' ? 'selected' : ''}>นับว่ายังไม่ผ่าน</option><option value="note" ${c.p.pend === 'note' ? 'selected' : ''}>ให้ผ่าน + ใส่หมายเหตุ</option></select>
-      <input data-cpn="${c.id}" value="${esc(c.p.note || '')}" placeholder="ข้อความหมายเหตุ เช่น เกรดออก มี.ค. 2570 · ออกฝึกวันแรก 8 มี.ค. 2570" style="flex:1;min-width:220px" ${dis}></div>`; }
+      <input data-cpn="${c.id}" value="${esc(c.p.note || '')}" placeholder="ข้อความหมายเหตุ เช่น เกรดออก มี.ค. 2570 · ออกฝึกวันแรก 8 มี.ค. 2570" style="flex:1;min-width:220px" ${dis}></div>
+    <div class="cd-p cd-pd">ไม่ต้องตรวจรายวิชา <input data-cps="${c.id}" value="${esc(c.p.skip || '')}" placeholder="รหัสวิชา คั่นด้วย , เช่น PS114600, PS114601" style="flex:1;min-width:220px" ${dis}></div>`; }
 function elCondSum(c, t) {
-  if (t.p === 'plan') return ` <span class="muted">${esc(elPlanSum(c.p.lv || {}))}</span>`;
+  if (t.p === 'plan') return ` <span class="muted">${esc(elPlanSum(c.p.lv || {}))}${c.p.skip ? ' · ไม่ตรวจ ' + esc(c.p.skip) : ''}</span>`;
   if (t.p === 'years') return ` <span class="muted">ปี ${c.p.years.join(', ')}${[...new Set((c.p.tx || []).map(k => k[0]))].map(y => ` (ปี ${y} ภาค ${['1', '2', '3'].filter(t2 => !(c.p.tx || []).includes(y + '/' + t2)).join(', ')})`).join('')}${c.p.pend === 'note' ? ' · รอเกรด = หมายเหตุ' : ''}</span>`;
   if (t.p === 'max') return c.p.v ? ` <span class="muted">≤ ${c.p.v} วิชา</span>` : '';
   if (t.p === 'gpa') return ` <span class="muted">${Number(c.p.v).toFixed(2)}</span>`;
@@ -4357,6 +4358,7 @@ function elCfgBind() {
     if (i.checked) tx.delete(k); else { if (['1', '2', '3'].filter(t2 => t2 !== k[2]).every(t2 => tx.has(k.slice(0, 2) + t2))) { i.checked = true; return toast('แต่ละชั้นปีต้องเลือกอย่างน้อย 1 ภาค'); } tx.add(k); } c.p.tx = [...tx].sort(); redraw(); });
   document.querySelectorAll('[data-cpd]').forEach(i => i.onchange = () => { const c = C(i.dataset.cpd); c.p.pend = i.value; if (i.value === 'note' && !c.p.note) c.p.note = 'รอผลการเรียนภาคปลาย — ต้องผ่านทุกวิชาก่อนออกฝึก'; redraw(); });
   document.querySelectorAll('[data-cpn]').forEach(i => i.onchange = () => { C(i.dataset.cpn).p.note = i.value; ELC.dirty = true; redraw(); });
+  document.querySelectorAll('[data-cps]').forEach(i => i.onchange = () => { C(i.dataset.cps).p.skip = i.value.toUpperCase().split(/[\s,;]+/).filter(Boolean).join(', '); ELC.dirty = true; redraw(); });
   document.querySelectorAll('[data-cv]').forEach(i => i.onchange = () => { C(i.dataset.cv).p.v = Number(i.value); ELC.dirty = true; redraw(); });
   document.querySelectorAll('[data-cc]').forEach(i => i.onchange = () => { C(i.dataset.cc).p.codes = i.value; ELC.dirty = true; redraw(); });
   document.querySelectorAll('[data-cs]').forEach(i => i.onchange = () => { C(i.dataset.cs).sev = i.value; redraw(); });
@@ -4473,7 +4475,7 @@ function elReason(r) {
   if (!f.C) return (r.reasons || []).join(' · ');
   const t = x => x.term ? ' ภาค ' + x.term : '';
   const one = c => {
-    if (c.type === 'planReg' && (r.miss || []).length) { const m = r.miss.some(x => x.inR) ? r.miss.filter(x => x.inR) : r.miss; return m.length <= 2 ? 'ยังไม่ลงทะเบียน ' + m.map(x => x.code + ' ' + (x.name || '') + ' (ปี ' + x.year + t(x) + ')').join(', ') : 'ยังไม่ลงทะเบียนตามแผน ' + m.length + ' วิชา (' + m.slice(0, 2).map(x => x.code).join(', ') + ' …)'; }
+    if (c.type === 'planReg' && (r.miss || []).some(x => x.inR)) { const m = r.miss.filter(x => x.inR); return m.length <= 2 ? 'ยังไม่ลงทะเบียน ' + m.map(x => x.code + ' ' + (x.name || '') + ' (ปี ' + x.year + t(x) + ')').join(', ') : 'ยังไม่ลงทะเบียนตามแผน ' + m.length + ' วิชา (' + m.slice(0, 2).map(x => x.code).join(', ') + ' …)'; }
     if (c.type === 'noF') { const F = elOpenF(r); if (F.length) return 'ติด F: ' + F.map(x => x.code + (x.name ? ' ' + x.name : '')).slice(0, 3).join(', ') + (F.length > 3 ? ' +' + (F.length - 3) : ''); }
     if (c.type === 'noI') { const I = elOpenI(r); if (I.length) return 'ติด I: ' + I.map(x => x.code).join(', '); }
     return String(c.detail || c.label || '');
