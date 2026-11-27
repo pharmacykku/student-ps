@@ -1935,7 +1935,7 @@ const ELIG_TYPES = {
   regDate:    { label: 'ไฟล์ตรวจสอบจบ (REG) อายุไม่เกิน', p: 'num', unit: 'วัน' }
 };
 const ELIG_MODES = ['intern4', 'intern6', 'grad', 'overdue'];
-const COMP_CODE = '000160', ELIG_VER = 6;
+const COMP_CODE = '000160', ELIG_VER = 7;
 const isFreeElec_ = cat => /เลือก\s*เสร/.test(String(cat || ''));
 /** รหัสวิชาบังคับตามแผน (รวมรหัสทดแทน) → รหัสหลักในแผน */
 function planReqCodes_(P, extra) {
@@ -1990,7 +1990,7 @@ function eligDefaults_() {
   const C = (type, on, sev, p) => ({ id: type, type, on, sev, p: p || {} });
   const grad = () => [C('noPending', true, 'block'), C('minGpax', true, 'block', { v: gg }), C('regMissing', true, 'block'), C('catPass', true, 'block'), C('noF', false, 'block', { v: 0 }), C('noI', false, 'block', { v: 0 }), C('english', true, 'block'), C('computer', true, 'block', { codes: COMP_CODE }), C('misCat', true, 'block', { codes: '' }), C('regDate', false, 'warn', { v: 90 })];
   return {
-    intern4: { year: 4, conds: [C('planReg', true, 'block', planLv_({ reg: ['1', '2', '3', '4/1', '4/2'] }, { skip: 'PS114600, PS114601' })), C('noF', true, 'warn', { v: 0 }), C('noI', true, 'warn', { v: 0 }), C('noPending', true, 'warn'), C('minGpax', false, 'block', { v: 2 }), C('mustPass', false, 'block', { codes: '' })] },
+    intern4: { year: 4, conds: [C('planReg', true, 'block', planLv_({ reg: ['1', '2', '3', '4/1', '4/2'] }, { skip: 'PS114600, PS114601, PS124600, PS124601' })), C('noF', true, 'warn', { v: 0 }), C('noI', true, 'warn', { v: 0 }), C('noPending', true, 'warn'), C('minGpax', false, 'block', { v: 2 }), C('mustPass', false, 'block', { codes: '' })] },
     intern6: { year: 5, conds: [C('planReg', true, 'block', planLv_({ pass: ['1', '2', '3', '4', '5/1'], reg: ['5/2', '5/3'] }, { pend: 'fail', note: 'เกรดออกประมาณ มี.ค. — ต้องผ่านทุกวิชาก่อนออกฝึก' })), C('noF', true, 'block', { v: 0 }), C('noI', true, 'block', { v: 0 }), C('noPending', false, 'warn'), C('minGpax', false, 'block', { v: 2 }), C('mustPass', false, 'block', { codes: '' })] },
     grad: { year: 6, conds: grad() },
     overdue: { year: 6, years: 6, conds: grad() }
@@ -2022,7 +2022,7 @@ function eligCfg_() {
       // v3: ฝึกงานปี 4 ไม่นับภาค 4/3 (รายวิชาฝึกปฏิบัติวิชาชีพ PS114600/PS114601 ลงทะเบียนภาค 3 = ตัวการฝึกงานเอง)
       if (Number(c.v || 0) < 3 && m === 'intern4') D[m].conds.forEach(x => { if (x.type === 'planReg' && x.p && x.p.lv && x.p.lv['4/3']) { const lv = Object.assign({}, x.p.lv); delete lv['4/3']; x.p = Object.assign({}, x.p, planDerive_(Object.assign({}, x.p, { lv }))); } });
       // v6: ฝึกงานปี 4 ไม่ตรวจรายวิชาฝึกปฏิบัติวิชาชีพ (ตัวการฝึกงานเอง)
-      if (Number(c.v || 0) < 6 && m === 'intern4') D[m].conds.forEach(x => { if (x.type === 'planReg' && x.p && !x.p.skip) x.p = Object.assign({}, x.p, { skip: 'PS114600, PS114601' }); });
+      if (Number(c.v || 0) < 7 && m === 'intern4') D[m].conds.forEach(x => { if (x.type === 'planReg' && x.p) { const sk = String(x.p.skip || '').toUpperCase().split(/[\s,;]+/).filter(Boolean); ['PS114600', 'PS114601', 'PS124600', 'PS124601'].forEach(k => { if (sk.indexOf(k) < 0) sk.push(k); }); x.p = Object.assign({}, x.p, { skip: sk.join(', ') }); } });
       if (Number(c.v || 0) < 2 && (m === 'grad' || m === 'overdue')) eligDefaults_()[m].conds.filter(x => (x.type === 'computer' || x.type === 'misCat') && !D[m].conds.some(y => y.type === x.type)).forEach(x => D[m].conds.push(x));
     }
   });
