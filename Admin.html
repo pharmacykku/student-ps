@@ -322,6 +322,12 @@ kbd{font:600 11px/1.6 'Sarabun',sans-serif;padding:0 6px;border-radius:6px;borde
 .otp-box.bad .otp-d span{border-color:var(--critical);background:color-mix(in srgb,var(--critical) 6%,var(--surface))}.otp-box.bad .otp-d{animation:uxShake .4s}
 .otp-box.busy .otp-d span{opacity:.6}
 @keyframes otpIn{from{transform:scale(.85)}}@keyframes otpCaret{50%{opacity:0}}
+.lg-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:4px;margin:14px 0 4px}
+.lg-tabs button{font:inherit;font-size:14px;border:0;background:transparent;border-radius:9px;padding:8px 6px;cursor:pointer;color:var(--text-2);display:flex;gap:6px;align-items:center;justify-content:center}
+.lg-tabs button.on{background:var(--surface);color:var(--brand);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.lg-pw input{padding-right:42px!important}.lg-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;padding:6px;color:var(--muted)}.lg-eye .ico{position:static;transform:none}
+#pwForm{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.side-me{cursor:pointer}.side-me:hover{background:var(--surface-2);border-radius:10px}
 .lg-err{color:var(--critical);font-size:14px;margin-top:10px;min-height:0}.lg-err:empty{display:none}
 .btn .bspin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:sp .7s linear infinite;flex:none}
 .lg-foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--border);text-align:center;font-size:12px;color:var(--muted);line-height:1.7}.lg-foot .nw{white-space:nowrap;color:var(--good,#2f9e44)}.lg-foot .ico{vertical-align:-.15em}
@@ -829,6 +835,13 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
       <div class="logo logo-img solid" role="img" aria-label="โลโก้คณะเภสัชศาสตร์ มหาวิทยาลัยขอนแก่น" style="width:64px;height:64px"></div>
       <h2 id="lgTitle">เข้าสู่ระบบ</h2>
       <p class="muted" style="margin:0" id="loginHint">สำหรับเจ้าหน้าที่และอาจารย์ที่ปรึกษา · กรอกอีเมลที่ได้รับสิทธิ์ ระบบจะส่งรหัส OTP ไปทางอีเมล</p>
+      <div class="lg-tabs" id="lgTabs" role="tablist"><button type="button" data-lgm="otp" class="on" role="tab"><i class="ico" data-i="mail"></i> อีเมล (OTP)</button><button type="button" data-lgm="pw" role="tab"><i class="ico" data-i="key"></i> ชื่อผู้ใช้</button></div>
+      <form id="pwForm" style="display:none" autocomplete="on">
+        <label class="f">ชื่อผู้ใช้<span class="lg-inp"><i class="ico" data-i="users"></i><input id="lpu" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="username" required></span></label>
+        <label class="f">รหัสผ่าน<span class="lg-inp lg-pw"><i class="ico" data-i="lock"></i><input id="lpp" type="password" autocomplete="current-password" required><button type="button" class="lg-eye" id="lpEye" aria-label="แสดงรหัสผ่าน" title="แสดง/ซ่อนรหัสผ่าน"><i class="ico" data-i="eye"></i></button></span></label>
+        <button class="btn primary" id="pwBtn"><i class="ico" data-i="shield"></i> <span>เข้าสู่ระบบ</span></button>
+        <div class="muted" style="font-size:12.5px;text-align:center">ยังไม่มีชื่อผู้ใช้? เข้าด้วยอีเมล (OTP) แล้วตั้งได้ที่ชื่อบัญชีมุมล่างซ้าย · ลืมรหัสผ่าน ใช้อีเมล (OTP) ได้เสมอ</div>
+      </form>
       <form id="loginForm">
         <label class="f">อีเมล<span class="lg-inp"><i class="ico" data-i="mail"></i><input id="lu" type="email" autocomplete="email" placeholder="name@kku.ac.th" required></span></label>
         <button class="btn primary" id="loginBtn"><i class="ico" data-i="send"></i> <span>ส่งรหัส OTP</span></button>
@@ -912,11 +925,11 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     </div></div>
   </nav>
   <div class="side-foot">
-    <div class="side-me" title="บัญชีที่เข้าสู่ระบบ"><span class="av" id="sideAv">A</span><div class="side-me-t"><b id="sideName">ผู้ดูแลระบบ</b><small id="sideRole"></small></div></div>
+    <div class="side-me" title="บัญชีที่เข้าสู่ระบบ · คลิกเพื่อตั้งชื่อผู้ใช้/รหัสผ่าน" onclick="acctOpen()" role="button" tabindex="0"><span class="av" id="sideAv">A</span><div class="side-me-t"><b id="sideName">ผู้ดูแลระบบ</b><small id="sideRole"></small></div></div>
     <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
-  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 27/11/69 #4</small></span></button>
+  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 27/11/69 username</small></span></button>
 </aside>
 <div class="side-overlay" id="sideOverlay"></div>
 <div class="shell-main">
@@ -1362,7 +1375,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <div class="two" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)">
       <div class="card">
         <h3>ผู้ใช้งานระบบ</h3>
-        <p class="sub">เข้าสู่ระบบด้วยอีเมล + รหัส OTP ทุกครั้ง · เฉพาะผู้ดูแลหลักจัดการได้</p>
+        <p class="sub">เข้าสู่ระบบด้วยอีเมล + รหัส OTP หรือชื่อผู้ใช้ + รหัสผ่าน · เฉพาะผู้ดูแลหลักจัดการได้ · ระบบเก็บรหัสผ่านแบบเข้ารหัสทางเดียว ผู้ดูแลก็ดูรหัสผ่านไม่ได้</p>
         <div class="table-wrap"><table class="t" id="tblUsers"></table></div>
       </div>
       <div class="card">
@@ -1375,6 +1388,9 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
             <option value="staff">เจ้าหน้าที่ (ดู/แก้ไขข้อมูล)</option>
             <option value="viewer">ดูอย่างเดียว (เช่น อาจารย์ที่ปรึกษา)</option></select></label>
           <label class="f">สถานะ<select id="uActive"><option value="true">ใช้งาน</option><option value="false">ปิดใช้งาน</option></select></label>
+          <label class="f">ชื่อผู้ใช้ <small class="muted">(ไม่บังคับ)</small><input id="uUser" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="เช่น somsri.k"></label>
+          <label class="f">รหัสผ่านชั่วคราว <small class="muted" id="uPwHint">(ผู้ใช้ต้องเปลี่ยนเมื่อเข้าครั้งแรก)</small><input id="uPw" type="text" autocomplete="off" placeholder="เว้นว่าง = ไม่เปลี่ยน"></label>
+          <label class="row" style="gap:6px;font-size:14px;grid-column:span 2;display:none" id="uClrW"><input type="checkbox" class="chk" id="uClrPw"> ลบรหัสผ่าน (ให้เข้าด้วยอีเมล OTP อย่างเดียว)</label>
           <div class="f" style="grid-column:span 2" id="uTabsWrap"><span>เมนูที่อนุญาต <small class="muted">(เจ้าหน้าที่/ดูอย่างเดียว · ไม่เลือก = ทุกเมนูตามสิทธิ์)</small></span><div class="u-tabs" id="uTabs"></div></div>
           <label class="row" style="gap:6px;font-size:14px;grid-column:span 2" id="uNotifyWrap"><input type="checkbox" class="chk" id="uNotify" checked> ส่งอีเมลแจ้งผู้ใช้ใหม่ พร้อมลิงก์เข้าระบบ</label>
           <div style="grid-column:span 2" class="row"><button class="btn primary">บันทึก</button><button type="button" class="btn" onclick="resetUserForm()">ล้าง</button></div>
@@ -1462,6 +1478,20 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <button class="btn" id="elpPrev" onclick="elPersonGo(-1)">‹ ก่อนหน้า</button><button class="btn primary" id="elpOk" onclick="elPersonOk()"></button><button class="btn" id="elpNext" onclick="elPersonGo(1)">ถัดไป ›</button></footer>
 </div></div>
 <!-- ============ ส่งรายชื่อให้อาจารย์ที่ปรึกษา ============ -->
+<div class="modal-bg" id="mAcct"><div class="modal" style="max-width:460px">
+  <header><h3><i class="ico" data-i="key"></i> ชื่อผู้ใช้และรหัสผ่าน</h3><button class="btn sm" id="acClose" onclick="closeM('mAcct')" aria-label="ปิด"><i class="ico" data-i="x"></i></button></header>
+  <div class="body">
+    <div id="acMust" style="display:none;margin-bottom:10px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--warning) 14%,transparent);color:var(--text);font-size:14px">รหัสผ่านนี้เป็นรหัสชั่วคราว กรุณาตั้งรหัสผ่านใหม่ก่อนใช้งาน</div>
+    <p class="sub" style="margin-top:0">ใช้เข้าสู่ระบบแทนการรอรหัส OTP ทางอีเมล · อีเมล <b id="acEmail"></b> ยังใช้เข้าด้วย OTP ได้เสมอ</p>
+    <form id="acForm" class="form-grid" style="grid-template-columns:1fr" autocomplete="on">
+      <input type="email" id="acEm2" autocomplete="username" hidden>
+      <label class="f">ชื่อผู้ใช้<input id="atUser" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="เช่น yuttapong.j" required><small class="muted">a-z 0-9 . _ - · 3–32 ตัว</small></label>
+      <label class="f" id="acCurW">รหัสผ่านเดิม<input id="acCur" type="password" autocomplete="current-password"></label>
+      <label class="f">รหัสผ่านใหม่<input id="acNew" type="password" autocomplete="new-password" minlength="8" required><small class="muted">อย่างน้อย 8 ตัว มีทั้งตัวอักษรภาษาอังกฤษและตัวเลข</small></label>
+      <label class="f">ยืนยันรหัสผ่านใหม่<input id="acNew2" type="password" autocomplete="new-password" minlength="8" required></label>
+      <div class="row"><button class="btn primary" id="acSave"><i class="ico" data-i="check"></i> บันทึก</button></div>
+    </form>
+  </div></div></div>
 <div class="modal-bg" id="mAdvN"><div class="modal" style="max-width:640px">
   <header><h3><i class="ico" data-i="send"></i> ส่งรายชื่อให้อาจารย์ที่ปรึกษา</h3><button class="btn sm" onclick="closeM('mAdvN')" aria-label="ปิด"><i class="ico" data-i="x"></i></button></header>
   <div class="body">
@@ -1639,6 +1669,57 @@ function tickResend() {
   paint(); resendTimer = setInterval(paint, 500);
 }
 $('loginForm').onsubmit = e => { e.preventDefault(); sendOtp(); };
+let LG_HOW = 'otp';
+function lgMethod(m) {
+  LG_HOW = m === 'pw' ? 'pw' : 'otp'; try { localStorage.setItem('lgHow', LG_HOW); } catch (e) {}
+  document.querySelectorAll('[data-lgm]').forEach(b => b.classList.toggle('on', b.dataset.lgm === LG_HOW));
+  $('pwForm').style.display = LG_HOW === 'pw' ? '' : 'none'; $('loginErr').textContent = '';
+  if (LG_HOW === 'pw') { $('loginForm').style.display = 'none'; $('otpForm').style.display = 'none'; $('lgTitle').textContent = 'เข้าสู่ระบบ'; $('loginHint').innerHTML = 'สำหรับเจ้าหน้าที่ที่ตั้งชื่อผู้ใช้ไว้แล้ว · อาจารย์ที่ปรึกษาเข้าด้วยอีเมล (OTP)'; setTimeout(() => $('lpu').focus(), 40); }
+  else otpStep(false);
+}
+document.querySelectorAll('[data-lgm]').forEach(b => b.onclick = () => lgMethod(b.dataset.lgm));
+try { if (localStorage.getItem('lgHow') === 'pw') lgMethod('pw'); } catch (e) {}
+$('lpEye').onclick = () => { const i = $('lpp'); i.type = i.type === 'password' ? 'text' : 'password'; $('lpEye').innerHTML = `<i class="ico" data-i="${i.type === 'password' ? 'eye' : 'eye-off'}"></i>`; };
+$('pwForm').onsubmit = async e => {
+  e.preventDefault(); if ($('pwBtn').disabled) return;
+  btnBusy('pwBtn', true, 'กำลังตรวจสอบ…'); $('loginErr').textContent = '';
+  let r;
+  try { r = await callPub('loginPassword', $('lpu').value, $('lpp').value, uaShort()); }
+  catch (err) { btnBusy('pwBtn', false); $('loginErr').textContent = err.message; $('lpp').value = ''; $('lpp').focus(); return; }
+  btnBusy('pwBtn', false); $('lpp').value = '';
+  await loginAfter(r, r.u || $('lpu').value.trim());
+};
+/** หลังยืนยันตัวตนสำเร็จ (OTP หรือรหัสผ่าน) → หน้าอนุญาต → โหลดข้อมูล */
+async function loginAfter(r, who) {
+  TOKEN = r.token;
+  if (!await loginConsent(who, r)) { try { await callPub('logout', TOKEN); } catch (e) {} TOKEN = null; loginReset(); otpStep(false); lgMethod(LG_HOW); toast('ยกเลิกการเข้าสู่ระบบแล้ว', 2000, 'small'); return; }
+  ss('tk', TOKEN);
+  try { const pre = await loginDone(who, r.role, r.how); otpStep(false); if (r.role === 'advisor') await bootAdv(pre); else await boot(pre); loginReset(); lgMethod(LG_HOW); if (r.mustChange) acctOpen(true); }
+  catch (err) {
+    $('lgOk').className = 'lg-ok fail'; $('lgMsg').textContent = 'เข้าสู่ระบบไม่สำเร็จ';
+    UX.alert({ icon: 'error', title: 'เข้าสู่ระบบไม่สำเร็จ', text: err.message || String(err) }).then(() => { loginReset(); otpStep(false); lgMethod(LG_HOW); });
+  }
+}
+// ---- บัญชีของฉัน: ชื่อผู้ใช้ / รหัสผ่าน ----
+let ACCT = null;
+async function acctOpen(must) {
+  if (!TOKEN || (ME && ME.role === 'advisor')) return;
+  ACCT = await call('myLoginInfo').catch(e => { toast(e.message || e); return null; }); if (!ACCT) return;
+  must = must || ACCT.mustChange;
+  $('acEmail').textContent = ACCT.email; $('acEm2').value = ACCT.email; $('atUser').value = ACCT.username || (ACCT.email.split('@')[0] || '').toLowerCase().replace(/[^a-z0-9._-]/g, '');
+  $('acCurW').style.display = ACCT.hasPw ? '' : 'none'; $('acCur').required = !!ACCT.hasPw; ['acCur', 'acNew', 'acNew2'].forEach(k => $(k).value = '');
+  $('acMust').style.display = must ? '' : 'none'; $('acClose').style.display = must ? 'none' : '';
+  $('mAcct').classList.add('on'); setTimeout(() => $(ACCT.hasPw ? 'acCur' : 'atUser').focus(), 60);
+}
+$('acForm').onsubmit = async e => {
+  e.preventDefault();
+  if ($('acNew').value !== $('acNew2').value) return UX.alert({ icon: 'error', title: 'รหัสผ่านใหม่ไม่ตรงกัน', text: 'กรุณากรอกให้ตรงกันทั้ง 2 ช่อง' });
+  btnBusy('acSave', true, 'กำลังบันทึก…');
+  const r = await call('mySetPassword', { username: $('atUser').value, current: $('acCur').value, pw: $('acNew').value }).catch(err => { UX.alert({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: err.message || err }); return null; });
+  btnBusy('acSave', false); if (!r) return;
+  closeM('mAcct'); UX.alert({ icon: 'success', title: 'บันทึกแล้ว', text: 'ครั้งต่อไปเข้าสู่ระบบด้วยชื่อผู้ใช้ "' + r.username + '" ได้', timer: 2500, button: true });
+};
+$('mAcct').addEventListener('click', e => { if (e.target.id === 'mAcct' && $('acClose').style.display === 'none') e.stopImmediatePropagation(); }, true);
 $('otpResend').onclick = e => { e.preventDefault(); if (Date.now() < resendAt) return; sendOtp(); };
 $('otpBack').onclick = e => { e.preventDefault(); otpStep(false); $('loginErr').textContent = ''; $('lu').focus(); };
 $('lo').oninput = () => { $('lo').value = $('lo').value.replace(/\D/g, '').slice(0, 6); $('otpBox').classList.remove('bad'); otpPaint(); if ($('lo').value.length === 6) $('otpForm').requestSubmit(); };
@@ -1648,12 +1729,12 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 function lgStep(i, st, note) {
   const li = $('lgSteps').children[i]; li.className = st; if (note !== undefined) li.querySelector('small').textContent = note;
 }
-async function loginDone(email, role) {
+async function loginDone(email, role, how) {
   $('lgMain').hidden = true; $('lgDone').hidden = false; $('lgOk').className = 'lg-ok';
   $('lgUser').textContent = email; $('lgMsg').textContent = 'กำลังตรวจสอบสิทธิ์…';
   [...$('lgSteps').children].forEach((li, i) => lgStep(i, '', ''));
   lgStep(0, 'act'); await wait(350);
-  lgStep(0, 'done', 'รหัส OTP ถูกต้อง'); lgStep(1, 'act');
+  lgStep(0, 'done', how === 'pw' ? 'ชื่อผู้ใช้และรหัสผ่านถูกต้อง' : 'รหัส OTP ถูกต้อง'); lgStep(1, 'act');
   const pre = unpackB(await call(role === 'advisor' ? 'advBootstrap' : 'adminBootstrap'));
   lgStep(1, 'done', (pre.me && pre.me.name ? pre.me.name + ' · ' : '') + (role === 'advisor' ? 'นักศึกษาในความดูแล ' : 'ข้อมูลนักศึกษา ') + (pre.students || []).length.toLocaleString() + ' คน');
   lgStep(2, 'act'); await wait(400);
@@ -1671,7 +1752,7 @@ function loginReset() { $('lgDone').hidden = true; $('lgConsent').hidden = true;
 /** หน้าขออนุญาตเข้าถึงบัญชี (แสดงหลังยืนยันรหัส OTP ถูกต้อง ก่อนเข้าสู่ระบบ) */
 function loginConsent(email, r) {
   const ROLE = { owner: 'ผู้ดูแลหลัก', admin: 'ผู้ดูแลระบบ', staff: 'เจ้าหน้าที่', viewer: 'ดูข้อมูลอย่างเดียว', advisor: 'อาจารย์ที่ปรึกษา' }[r.role] || r.role;
-  const P = [['shield', 'ยืนยันตัวตนของคุณด้วยรหัส OTP ทางอีเมล'], ['clipboard', 'ตรวจสอบข้อมูลผู้ใช้งานและบทบาทของคุณ'],
+  const P = [['shield', r.how === 'pw' ? 'ยืนยันตัวตนของคุณด้วยชื่อผู้ใช้และรหัสผ่าน' : 'ยืนยันตัวตนของคุณด้วยรหัส OTP ทางอีเมล'], ['clipboard', 'ตรวจสอบข้อมูลผู้ใช้งานและบทบาทของคุณ'],
     ['key', 'รับสิทธิ์การใช้งานตามที่กำหนด (' + ROLE + ')'], ['history', 'บันทึกการเข้าใช้และการเข้าถึงข้อมูลนักศึกษาเพื่อความปลอดภัย']];
   $('lcApp').textContent = 'ระบบฐานข้อมูลนักศึกษา' + (r.role === 'advisor' ? ' · พอร์ทัลอาจารย์ที่ปรึกษา' : ' · ผู้ดูแลระบบ');
   $('lcUser').textContent = email;
@@ -1694,14 +1775,8 @@ $('otpForm').onsubmit = async e => {
     UX.alert({ icon: 'error', title: 'ยืนยันรหัสไม่สำเร็จ', text: err.message }).then(() => { $('lo').value = ''; otpPaint(); $('lo').focus(); });
     return;
   }
-  TOKEN = r.token; btnBusy('otpBtn', false);
-  if (!await loginConsent($('lu').value.trim(), r)) { try { await callPub('logout', TOKEN); } catch (e) {} TOKEN = null; loginReset(); otpStep(false); $('lu').focus(); toast('ยกเลิกการเข้าสู่ระบบแล้ว', 2000, 'small'); return; }
-  ss('tk', TOKEN);
-  try { const pre = await loginDone($('lu').value.trim(), r.role); otpStep(false); if (r.role === 'advisor') await bootAdv(pre); else await boot(pre); loginReset(); }
-  catch (err) {
-    $('lgOk').className = 'lg-ok fail'; $('lgMsg').textContent = 'เข้าสู่ระบบไม่สำเร็จ';
-    UX.alert({ icon: 'error', title: 'เข้าสู่ระบบไม่สำเร็จ', text: err.message || String(err) }).then(() => { loginReset(); otpStep(false); });
-  }
+  btnBusy('otpBtn', false);
+  await loginAfter(r, $('lu').value.trim());
 };
 async function doLogout() {
   if (!(await UX.confirm({ icon: 'lock', title: 'ออกจากระบบ?', text: 'ต้องการออกจากระบบผู้ดูแลใช่หรือไม่', ok: 'ออกจากระบบ' }))) return;
@@ -3379,13 +3454,14 @@ async function doBackup() { $('backupMsg').textContent = 'กำลังสำ�
 async function loadUsers() { renderUsers(await call('adminListUsers')); if (!$('uTabs').children.length) uTabsPaint([]); }
 const ROLE_TH = { owner: 'ผู้ดูแลหลัก', admin: 'ผู้ดูแลระบบ', staff: 'เจ้าหน้าที่', viewer: 'ดูอย่างเดียว' };
 function renderUsers(u) {
-  $('tblUsers').innerHTML = `<thead><tr><th>อีเมล</th><th>ชื่อ</th><th>สิทธิ์</th><th>สถานะ</th><th>เข้าใช้ล่าสุด</th><th>เพิ่มโดย</th><th></th></tr></thead><tbody>` +
-    u.map(x => `<tr><td>${esc(x.email)}</td><td>${esc(x.name)}</td><td><span class="badge ${x.role === 'owner' ? 'role-owner' : x.role === 'admin' ? 'brand' : ''}">${esc(ROLE_TH[x.role] || x.role)}</span></td>
+  $('tblUsers').innerHTML = `<thead><tr><th>อีเมล</th><th>ชื่อผู้ใช้</th><th>ชื่อ</th><th>สิทธิ์</th><th>สถานะ</th><th>เข้าใช้ล่าสุด</th><th>เพิ่มโดย</th><th></th></tr></thead><tbody>` +
+    u.map(x => `<tr><td>${esc(x.email)}</td><td>${x.username ? esc(x.username) + (x.hasPw ? (x.mustChange ? ' <span class="badge" title="รหัสผ่านชั่วคราว ยังไม่เปลี่ยน">ชั่วคราว</span>' : ' <i class="ico" data-i="key" title="ตั้งรหัสผ่านแล้ว"></i>') : ' <span class="muted" style="font-size:12px">ไม่มีรหัสผ่าน</span>') : '<span class="muted">–</span>'}</td><td>${esc(x.name)}</td><td><span class="badge ${x.role === 'owner' ? 'role-owner' : x.role === 'admin' ? 'brand' : ''}">${esc(ROLE_TH[x.role] || x.role)}</span></td>
       <td>${x.active ? (x.tabs ? `<span class="badge" title="${esc(x.tabs.split(',').map(k => (B.menuTabs || {})[k] || k).join(', '))}">จำกัด ${x.tabs.split(',').length} เมนู</span> ` : '') + '<span class="status"><span class="dot" style="background:var(--good)"></span>ใช้งาน</span>' : '<span class="muted">ปิดใช้งาน</span>'}</td><td>${esc(x.last || '–')}</td><td style="font-size:12.5px" class="muted">${esc(x.by || '')}</td>
       <td>${x.role === 'owner' ? '' : `<button class="btn sm" data-u="${esc(JSON.stringify(x))}">แก้ไข</button>`}</td></tr>`).join('') + '</tbody>';
   document.querySelectorAll('[data-u]').forEach(b => b.onclick = () => {
     const x = JSON.parse(b.dataset.u); $('uFormTitle').textContent = 'แก้ไขผู้ใช้: ' + x.email;
     $('uEmail').value = x.email; $('uEmail').readOnly = true; $('uDisp').value = x.name; $('uRole').value = x.role; $('uActive').value = String(x.active); $('uNotifyWrap').style.display = 'none';
+    $('uUser').value = x.username || ''; $('uPw').value = ''; $('uClrPw').checked = false; $('uClrW').style.display = x.hasPw ? '' : 'none'; $('uPwHint').textContent = x.hasPw ? '(ตั้งใหม่ = รีเซ็ตรหัสผ่าน)' : '(ผู้ใช้ต้องเปลี่ยนเมื่อเข้าครั้งแรก)';
     uTabsPaint(String(x.tabs || '').split(',').filter(Boolean));
   });
 }
@@ -3395,12 +3471,14 @@ function uTabsPaint(sel) {
   $('uTabsWrap').style.display = ['admin'].indexOf($('uRole').value) >= 0 ? 'none' : '';
 }
 $('uRole').addEventListener('change', () => $('uTabsWrap').style.display = $('uRole').value === 'admin' ? 'none' : '');
-function resetUserForm() { uTabsPaint([]); $('uForm').reset(); $('uEmail').readOnly = false; $('uNotifyWrap').style.display = ''; $('uFormTitle').textContent = 'เพิ่มผู้ใช้ด้วยอีเมล'; }
+function resetUserForm() { uTabsPaint([]); $('uForm').reset(); $('uClrW').style.display = 'none'; $('uEmail').readOnly = false; $('uNotifyWrap').style.display = ''; $('uFormTitle').textContent = 'เพิ่มผู้ใช้ด้วยอีเมล'; }
 $('uForm').onsubmit = async e => {
   e.preventDefault();
   const isNew = !$('uEmail').readOnly;
-  const u = await call('adminSaveUser', { email: $('uEmail').value, name: $('uDisp').value, role: $('uRole').value, active: $('uActive').value === 'true', notify: $('uNotify').checked, tabs: [...document.querySelectorAll('#uTabs input:checked')].map(i => i.value) });
+  const pw = $('uPw').value.trim();
+  const u = await call('adminSaveUser', { email: $('uEmail').value, name: $('uDisp').value, role: $('uRole').value, active: $('uActive').value === 'true', notify: $('uNotify').checked, tabs: [...document.querySelectorAll('#uTabs input:checked')].map(i => i.value), username: $('uUser').value, tempPw: pw, clearPw: $('uClrPw').checked }).catch(err => { UX.alert({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: err.message || err }); return null; }); if (!u) return;
   renderUsers(u); resetUserForm(); toast(isNew ? 'เพิ่มผู้ใช้แล้ว' + ($('uNotify').checked ? ' และส่งอีเมลแจ้งแล้ว' : '') : 'บันทึกแล้ว');
+  if (pw) UX.alert({ icon: 'key', title: 'ตั้งรหัสผ่านชั่วคราวแล้ว', text: 'แจ้งผู้ใช้ทางช่องทางที่ปลอดภัย (ไม่ส่งทางกลุ่มแชต) · ผู้ใช้ต้องเปลี่ยนรหัสผ่านเมื่อเข้าครั้งแรก' });
 };
 
 // ---- บันทึกการเข้าใช้ (owner) ----

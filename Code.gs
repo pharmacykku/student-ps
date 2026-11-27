@@ -51,7 +51,7 @@ const STUDENT_HEADERS = [
 const ADMISSION_ROUNDS = ['รอบที่ 1 Portfolio', 'รอบที่ 2 โควตา', 'รอบที่ 3 Admission', 'รอบที่ 4 Direct Admission', 'อื่นๆ'];
 const ROLES = ['owner', 'admin', 'staff', 'viewer'];
 const GRADE_HEADERS = ['รหัสนักศึกษา', 'ปีการศึกษา', 'ภาคการศึกษา', 'GPA', 'GPAX', 'หน่วยกิตสะสม', 'บันทึกเมื่อ'];
-const USER_HEADERS = ['email', 'ชื่อที่แสดง', 'role', 'active', 'เพิ่มโดย', 'สร้างเมื่อ', 'เข้าใช้ล่าสุด', 'เมนูที่อนุญาต'];
+const USER_HEADERS = ['email', 'ชื่อที่แสดง', 'role', 'active', 'เพิ่มโดย', 'สร้างเมื่อ', 'เข้าใช้ล่าสุด', 'เมนูที่อนุญาต', 'username', 'รหัสผ่าน (hash)', 'ต้องเปลี่ยนรหัสผ่าน'];
 const TERMSNAP_HEADERS = ['ภาค', 'รหัสนักศึกษา', 'ชั้นปี', 'สถานะ', 'หลักสูตร', 'อาจารย์ที่ปรึกษา', 'บันทึกเมื่อ', 'ที่มา'];
 const CAL_HEADERS = ['Id', 'วันที่', 'ถึงวันที่', 'หัวข้อ', 'ประเภท', 'เตือนล่วงหน้า (วัน)', 'เมนูที่เกี่ยวข้อง', 'รายละเอียด', 'ผู้บันทึก', 'บันทึกเมื่อ'];
 const STATUSHIST_HEADERS = ['HistId', 'รหัสนักศึกษา', 'สถานะเดิม', 'สถานะใหม่', 'ภาคที่มีผล', 'เหตุผล/หมายเหตุ', 'เลขที่คำสั่ง/ประกาศ', 'ที่มา', 'ผู้บันทึก', 'บันทึกเมื่อ'];
@@ -638,7 +638,73 @@ function verifyOtp(email, code, ua) {
   throw new Error('บัญชีนี้ไม่มีสิทธิ์เข้าใช้');
 }
 
-function startSession_(f, ua) {
+// ---- เข้าสู่ระบบด้วยชื่อผู้ใช้ + รหัสผ่าน (เฉพาะผู้ใช้ในชีต "ผู้ใช้" ที่ตั้งรหัสผ่านไว้) ----
+const PW_ITER = 1200, PW_MAX_FAIL = 5, PW_LOCK_MIN = 15;
+/** เก็บเฉพาะค่า hash แบบมี salt และวนซ้ำ (ไม่เก็บรหัสผ่านจริง) */
+function pwHash_(pw, salt, it) { let h = String(pw); for (let i = 0; i < it; i++) h = hash_(salt, h); return h; }
+function pwMake_(pw) { const salt = Utilities.getUuid().replace(/-/g, ''); return 'p1$' + PW_ITER + '$' + salt + '$' + pwHash_(pw, salt, PW_ITER); }
+function pwCheck_(pw, stored) {
+  const m = String(stored || '').split('$'); if (m[0] !== 'p1' || m.length !== 4) return false;
+  const h = pwHash_(pw, m[2], Number(m[1]) || PW_ITER); let d = h.length ^ m[3].length; for (let i = 0; i < h.length && i < m[3].length; i++) d |= h.charCodeAt(i) ^ m[3].charCodeAt(i); return d === 0;
+}
+function normUser_(u) { return String(u || '').trim().toLowerCase(); }
+function pwRule_(pw, username) {
+  pw = String(pw || '');
+  if (pw.length < 8) throw new Error('รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร');
+  if (pw.length > 64) throw new Error('รหัสผ่านยาวเกิน 64 ตัวอักษร');
+  if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) throw new Error('รหัสผ่านต้องมีทั้งตัวอักษรภาษาอังกฤษและตัวเลข');
+  if (username && pw.toLowerCase().indexOf(normUser_(username)) >= 0) throw new Error('รหัสผ่านต้องไม่มีชื่อผู้ใช้อยู่ในนั้น');
+}
+function userRule_(u) { if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(u)) throw new Error('ชื่อผู้ใช้ใช้ได้เฉพาะ a-z 0-9 . _ - ยาว 3–32 ตัว (ขึ้นต้นด้วยตัวอักษรหรือตัวเลข)'); }
+function findUserByName_(u) {
+  u = normUser_(u); if (!u) return null;
+  const t = readTable_(SH.USERS), U = idx_(t.headers); if (U.username === undefined) return null;
+  for (let i = 0; i < t.rows.length; i++) if (normUser_(t.rows[i][U.username]) === u) return { t, U, i, r: t.rows[i] };
+  return null;
+}
+function userCell_(f, col, v) { const H = idx_(f.t.sh.getRange(1, 1, 1, f.t.sh.getLastColumn()).getValues()[0].map(String)); if (H[col] !== undefined) f.t.sh.getRange(f.i + 2, H[col] + 1).setValue(v); }
+/** เข้าสู่ระบบด้วยชื่อผู้ใช้ + รหัสผ่าน · ผิดเกิน 5 ครั้ง ล็อก 15 นาที · ข้อความผิดพลาดไม่บอกว่ามีชื่อผู้ใช้หรือไม่ */
+function loginPassword(username, password, ua) {
+  const u = normUser_(username), c = CacheService.getScriptCache(), k = 'pwf_' + u, n = Number(c.get(k) || 0);
+  if (!u || !password) throw new Error('กรอกชื่อผู้ใช้และรหัสผ่าน');
+  if (n >= PW_MAX_FAIL) { access_(u, '', 'ล็อกชั่วคราว (รหัสผ่านผิดเกิน)', '', ua); throw new Error('ใส่รหัสผ่านผิดเกิน ' + PW_MAX_FAIL + ' ครั้ง กรุณารอ ' + PW_LOCK_MIN + ' นาที หรือเข้าสู่ระบบด้วยอีเมล (OTP)'); }
+  const f = findUserByName_(u), stored = f && f.U['รหัสผ่าน (hash)'] !== undefined ? f.r[f.U['รหัสผ่าน (hash)']] : '';
+  const ok = stored ? pwCheck_(password, stored) : (pwHash_(password, 'x', PW_ITER), false);
+  if (!ok || !f || !isActive_(f.r[f.U.active])) {
+    c.put(k, String(n + 1), PW_LOCK_MIN * 60);
+    access_(f ? normEmail_(f.r[f.U.email]) : u, '', 'รหัสผ่านไม่ถูกต้อง', 'ชื่อผู้ใช้ ' + u + ' · ครั้งที่ ' + (n + 1) + (f && !isActive_(f.r[f.U.active]) ? ' · บัญชีถูกปิด' : ''), ua);
+    throw new Error('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' + (n + 1 < PW_MAX_FAIL ? ' (เหลือ ' + (PW_MAX_FAIL - n - 1) + ' ครั้ง)' : ''));
+  }
+  c.remove(k);
+  const r = startSession_(f, ua, 'ชื่อผู้ใช้');
+  r.mustChange = f.U['ต้องเปลี่ยนรหัสผ่าน'] !== undefined && /^(true|1|y)/i.test(String(f.r[f.U['ต้องเปลี่ยนรหัสผ่าน']]));
+  r.how = 'pw'; return r;
+}
+/** ข้อมูลการเข้าสู่ระบบของตัวเอง */
+function myLoginInfo(token) {
+  const s = auth_(token), f = findUser_(s.u); if (!f) throw new Error('ไม่พบบัญชี');
+  return { email: s.u, username: f.U.username !== undefined ? String(f.r[f.U.username] || '') : '', hasPw: !!(f.U['รหัสผ่าน (hash)'] !== undefined && f.r[f.U['รหัสผ่าน (hash)']]),
+    mustChange: f.U['ต้องเปลี่ยนรหัสผ่าน'] !== undefined && /^(true|1|y)/i.test(String(f.r[f.U['ต้องเปลี่ยนรหัสผ่าน']])) };
+}
+/** ตั้ง/เปลี่ยนชื่อผู้ใช้และรหัสผ่านของตัวเอง · มีรหัสเดิม → ต้องใส่รหัสเดิม */
+function mySetPassword(token, o) {
+  const s = auth_(token); o = o || {};
+  return withLock_(() => {
+    ensureHeaders_(sheet_(SH.USERS), USER_HEADERS);
+    const f = findUser_(s.u); if (!f) throw new Error('ไม่พบบัญชี');
+    const cur = f.U['รหัสผ่าน (hash)'] !== undefined ? String(f.r[f.U['รหัสผ่าน (hash)']] || '') : '';
+    if (cur && !pwCheck_(String(o.current || ''), cur)) { access_(s.u, s.name, 'เปลี่ยนรหัสผ่านไม่สำเร็จ', 'รหัสผ่านเดิมไม่ถูกต้อง', ''); throw new Error('รหัสผ่านเดิมไม่ถูกต้อง'); }
+    const u = normUser_(o.username); userRule_(u);
+    const other = findUserByName_(u); if (other && normEmail_(other.r[other.U.email]) !== s.u) throw new Error('ชื่อผู้ใช้นี้ถูกใช้แล้ว');
+    pwRule_(o.pw, u);
+    if (cur && pwCheck_(String(o.pw), cur)) throw new Error('รหัสผ่านใหม่ต้องไม่ซ้ำรหัสเดิม');
+    userCell_(f, 'username', u); userCell_(f, 'รหัสผ่าน (hash)', pwMake_(o.pw)); userCell_(f, 'ต้องเปลี่ยนรหัสผ่าน', false);
+    CacheService.getScriptCache().remove('pwf_' + u);
+    access_(s.u, s.name, cur ? 'เปลี่ยนรหัสผ่าน' : 'ตั้งรหัสผ่าน', 'ชื่อผู้ใช้ ' + u, ''); log_(s.u, cur ? 'เปลี่ยนรหัสผ่าน' : 'ตั้งชื่อผู้ใช้/รหัสผ่าน', '', u);
+    return { username: u, hasPw: true };
+  });
+}
+function startSession_(f, ua, how) {
   const email = normEmail_(f.r[f.U.email]);
   const token = Utilities.getUuid() + Utilities.getUuid().slice(0, 8);
   const sess = { u: email, name: f.r[f.U['ชื่อที่แสดง']] || email, role: f.r[f.U.role] || 'staff', t0: Date.now() };
@@ -646,7 +712,7 @@ function startSession_(f, ua) {
   if (tabs.length && ADMIN_ROLES.indexOf(sess.role) < 0) sess.tabs = tabs;
   CacheService.getScriptCache().put('sess_' + token, JSON.stringify(sess), SESSION_HOURS * 3600);
   f.t.sh.getRange(f.i + 2, f.U['เข้าใช้ล่าสุด'] + 1).setValue(new Date());
-  access_(email, sess.name, 'เข้าสู่ระบบสำเร็จ', roleName_(sess.role), ua);
+  access_(email, sess.name, 'เข้าสู่ระบบสำเร็จ', roleName_(sess.role) + (how ? ' · ' + how : ' · OTP'), ua);
   log_(email, 'เข้าสู่ระบบ', '', '');
   return { token, name: sess.name, role: sess.role, u: email };
 }
@@ -698,7 +764,8 @@ function adminListUsers(token) {
   const fmt = d => d ? Utilities.formatDate(new Date(d), 'Asia/Bangkok', 'd/M/yyyy HH:mm') : '';
   return t.rows.filter(r => r[U.email]).map(r => ({
     email: normEmail_(r[U.email]), name: r[U['ชื่อที่แสดง']], role: r[U.role], active: isActive_(r[U.active]),
-    by: r[U['เพิ่มโดย']], created: fmt(r[U['สร้างเมื่อ']]), last: fmt(r[U['เข้าใช้ล่าสุด']]), tabs: U['เมนูที่อนุญาต'] !== undefined ? String(r[U['เมนูที่อนุญาต']] || '') : ''
+    by: r[U['เพิ่มโดย']], created: fmt(r[U['สร้างเมื่อ']]), last: fmt(r[U['เข้าใช้ล่าสุด']]), tabs: U['เมนูที่อนุญาต'] !== undefined ? String(r[U['เมนูที่อนุญาต']] || '') : '',
+    username: U.username !== undefined ? String(r[U.username] || '') : '', hasPw: !!(U['รหัสผ่าน (hash)'] !== undefined && r[U['รหัสผ่าน (hash)']]), mustChange: U['ต้องเปลี่ยนรหัสผ่าน'] !== undefined && /^(true|1|y)/i.test(String(r[U['ต้องเปลี่ยนรหัสผ่าน']]))
   }));
 }
 
@@ -708,8 +775,12 @@ function adminSaveUser(token, user) {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('รูปแบบอีเมลไม่ถูกต้อง');
   if (['admin', 'staff', 'viewer'].indexOf(user.role) < 0) throw new Error('สิทธิ์ไม่ถูกต้อง');
   const tabs = [].concat(user.tabs || []).filter(x => MENU_TABS[x]).join(',');
+  const uname = normUser_(user.username); if (uname) userRule_(uname);
+  if (user.tempPw) pwRule_(user.tempPw, uname);
+  if (user.tempPw && !uname) throw new Error('ตั้งรหัสผ่านต้องมีชื่อผู้ใช้');
   return withLock_(() => {
     ensureHeaders_(sheet_(SH.USERS), USER_HEADERS);
+    if (uname) { const o = findUserByName_(uname); if (o && normEmail_(o.r[o.U.email]) !== email) throw new Error('ชื่อผู้ใช้ "' + uname + '" ถูกใช้แล้ว'); }
     const f = findUser_(email);
     const now = new Date();
     if (!f) {
@@ -733,6 +804,14 @@ function adminSaveUser(token, user) {
       f.t.sh.getRange(f.i + 2, idx_(f.t.sh.getRange(1, 1, 1, f.t.sh.getLastColumn()).getValues()[0].map(String))['เมนูที่อนุญาต'] + 1).setValue(tabs);
       log_(s.u, 'แก้ไขผู้ใช้', '', email + ' → ' + user.role + (user.active === false ? ' (ปิดใช้งาน)' : ''));
       access_(s.u, s.name, 'แก้ไขผู้ใช้', email + ' · ' + roleName_(user.role) + (user.active === false ? ' · ปิดใช้งาน' : ''), '');
+    }
+    // ชื่อผู้ใช้ / รหัสผ่านชั่วคราว (ผู้ใช้ต้องเปลี่ยนเมื่อเข้าครั้งแรก) / ลบรหัสผ่าน
+    const g = findUser_(email);
+    if (g && g.r[g.U.role] !== 'owner') {
+      const was = g.U.username !== undefined ? normUser_(g.r[g.U.username]) : '';
+      if (uname !== was) { userCell_(g, 'username', uname); if (!uname) { userCell_(g, 'รหัสผ่าน (hash)', ''); userCell_(g, 'ต้องเปลี่ยนรหัสผ่าน', ''); } access_(s.u, s.name, 'ตั้งชื่อผู้ใช้', email + ' · ' + (uname || '(ลบ)'), ''); }
+      if (user.tempPw) { userCell_(g, 'รหัสผ่าน (hash)', pwMake_(user.tempPw)); userCell_(g, 'ต้องเปลี่ยนรหัสผ่าน', true); CacheService.getScriptCache().remove('pwf_' + uname); access_(s.u, s.name, 'ตั้งรหัสผ่านชั่วคราว', email + ' · ' + uname, ''); log_(s.u, 'ตั้งรหัสผ่านชั่วคราว', '', email); }
+      else if (user.clearPw) { userCell_(g, 'รหัสผ่าน (hash)', ''); userCell_(g, 'ต้องเปลี่ยนรหัสผ่าน', ''); access_(s.u, s.name, 'ลบรหัสผ่าน', email, ''); }
     }
     return adminListUsers(token);
   });
