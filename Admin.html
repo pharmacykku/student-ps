@@ -932,7 +932,7 @@ iframe.mail{width:100%;height:60vh;border:1px solid var(--border);border-radius:
     <a class="side-act dash" href="<?= pubDash ?>" target="_top" title="กลับไปหน้า Dashboard ภาพรวม"><i class="ico" data-i="chart"></i><span>กลับหน้า Dashboard ภาพรวม</span></a>
     <button class="side-act out" onclick="doLogout()" title="ออกจากระบบ"><i class="ico" data-i="logout"></i><span>ออกจากระบบ</span></button>
   </div>
-  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 27/11/69 F-I PDF</small></span></button>
+  <button class="side-collapse" id="sideCollapse" title="ย่อ/ขยายเมนู"><i class="ico" data-i="chevron"></i><span>ย่อเมนู <small class="muted" style="font-size:10.5px;opacity:.7">· v 27/11/69 F-I รายบุคคล</small></span></button>
 </aside>
 <div class="side-overlay" id="sideOverlay"></div>
 <div class="shell-main">
@@ -4865,6 +4865,7 @@ function elPersonRender() {
     ${elReason(r) ? `<div class="el-why ${b === 'fail' ? 'bad' : 'warn'}" style="-webkit-line-clamp:unset;margin:8px 0">${esc(elReason(r))}</div>` : ''}${(r.notes || []).map(n => `<div class="el-pn" style="margin:6px 0"><i class="ico" data-i="note"></i> หมายเหตุ: ${esc(n)}</div>`).join('')}
     <div class="elp-grid"><div>${plan}</div>
       <div><div class="sec-t" style="margin-top:0">หน่วยกิตตามหมวด (ไฟล์ REG)</div>${cats.length ? cats.map(c => { const ok = c.status === 'PASS' || Number(c.passed) >= Number(c.req); return `<div class="elp-cat"><span>${esc(c.no)} ${esc(c.name)}</span><div class="prog"><i class="${ok ? '' : 'w'}" style="width:${Math.min(100, Number(c.req) ? Number(c.passed || 0) / Number(c.req) * 100 : 100)}%"></i></div><span class="${ok ? 'ok' : 'warn'}">${c.passed || 0}/${esc(c.req)}${ok ? ' ✓' : ' ขาด ' + Math.max(0, Number(c.req) - Number(c.passed || 0))}</span></div>`; }).join('') : '<p class="muted">ไม่มีข้อมูลหมวด</p>'}
+      <div class="sec-t">รายวิชา F / U / I</div>${(r.fl || []).length ? r.fl.map(x => { const o = elFIInfo(x); return `<div class="elp-c"><span class="dot ${x.fixed ? 'g' : 'r'}"></span><span class="n">${esc(x.code)} ${esc(x.name)}<br><small class="muted">${x.tries.map(esc).join(' → ')}</small></span><span class="g ${x.fixed ? 'ok' : 'bad'}">${esc(o.st)}</span></div>`; }).join('') : '<div class="muted" style="font-size:13px">ไม่มี</div>'}
       <div class="sec-t">ข้อความแจ้งนักศึกษา</div><textarea id="elpMsg" rows="6" style="width:100%;font-size:13px">${esc(elMsg(r))}</textarea>
       <button class="btn sm" style="margin-top:6px" onclick="elCopy($('elpMsg').value)"><i class="ico" data-i="copy"></i> คัดลอกข้อความ</button></div></div>`;
   $('elpPos').textContent = `${ELP.i + 1} / ${ELP.L.length}`;
@@ -5017,9 +5018,11 @@ function elSheetHtml(r) {
     <div style="font-weight:700;color:#2f4f25;margin:6px 0">ผลตรวจตามเงื่อนไข</div>
     <table style="width:100%;border-collapse:collapse;margin-bottom:12px;table-layout:fixed"><colgroup><col style="width:34%"><col style="width:74px"><col></colgroup><tr><th ${th}>เงื่อนไข</th><th ${th}>ผล</th><th ${th}>รายละเอียด</th></tr>
       ${(f.C || []).map(c => `<tr><td ${td}>${esc(c.label)}${c.sev === 'warn' ? ' <span style="color:#9c6b00">(แจ้งเตือน)</span>' : ''}</td><td ${td}><b style="color:${c.ok === false ? (c.sev === 'block' ? C.bad : '#9c6b00') : C.ok}">${c.ok === false ? 'ไม่ผ่าน' : 'ผ่าน'}</b>${c.man ? '<div style="font-size:10.5px;color:#4263eb">แก้โดยเจ้าหน้าที่</div>' : ''}</td><td ${td}>${esc(c.detail)}</td></tr>`).join('')}</table>
-    ${(r.fl || []).length ? `<div style="font-weight:700;color:#2f4f25;margin:6px 0">รายวิชา F / U / I</div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;table-layout:fixed"><colgroup><col style="width:90px"><col><col style="width:30%"><col style="width:100px"></colgroup><tr><th ${th}>รหัสวิชา</th><th ${th}>ชื่อวิชา</th><th ${th}>ประวัติเกรด</th><th ${th}>สถานะ</th></tr>
-      ${r.fl.map(x => `<tr><td ${td}>${esc(x.code)}</td><td ${td}>${esc(x.name)}</td><td ${td}>${x.tries.map(esc).join(' → ')}</td><td ${td}><b style="color:${x.fixed ? C.ok : C.bad}">${x.fixed ? 'แก้แล้ว (' + esc(x.now) + ')' : 'ยังไม่แก้'}</b></td></tr>`).join('')}</table>` : ''}
+    ${(r.fl || []).length ? (() => { const L = r.fl.map(x => Object.assign({ x }, elFIInfo(x))), nF = L.filter(o => !o.x.fixed && o.kind !== 'I').length, nI = L.filter(o => !o.x.fixed && o.kind === 'I').length, nFix = L.filter(o => o.x.fixed).length;
+      return `<div style="font-weight:700;color:#2f4f25;margin:6px 0">รายวิชา F / U / I <span style="font-weight:400;font-size:12px;color:#56614d">· ยังติด F/U <b style="color:${nF ? C.bad : C.ok}">${nF}</b> วิชา · ยังติด I <b style="color:${nI ? C.bad : C.ok}">${nI}</b> วิชา · แก้แล้ว <b style="color:${C.ok}">${nFix}</b> วิชา</span></div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;table-layout:fixed"><colgroup><col style="width:80px"><col><col style="width:46px"><col style="width:22%"><col style="width:120px"></colgroup>
+      <tr><th ${th}>รหัสวิชา</th><th ${th}>ชื่อวิชา</th><th ${th}>ติด</th><th ${th}>ติดภาค / ประวัติเกรด</th><th ${th}>สถานะ</th></tr>
+      ${L.map(o => `<tr><td ${td}>${esc(o.x.code)}</td><td ${td}>${esc(o.x.name)}</td><td ${td}><b>${o.kind}</b></td><td ${td}>${o.x.tries.map(esc).join(' → ')}</td><td ${td}><b style="color:${o.x.fixed ? C.ok : C.bad}">${esc(o.st)}</b></td></tr>`).join('')}</table>`; })() : `<div style="font-size:12px;margin-bottom:12px;color:${C.ok}"><b>รายวิชา F / U / I:</b> ไม่มี</div>`}
     ${Object.keys(missBy).length ? `<div style="font-weight:700;color:#2f4f25;margin:6px 0">รายวิชาที่ยังไม่ลงทะเบียนตามแผน</div>
       <div style="font-size:12px;margin-bottom:12px">${Object.keys(missBy).map(y => `<div><b>ชั้นปี ${y}:</b> ${missBy[y].map(x => esc(x.code + ' ' + x.name)).join(', ')}</div>`).join('')}</div>` : ''}
     ${rv.note ? `<div style="font-size:12px;margin-bottom:12px"><b>หมายเหตุ:</b> ${esc(rv.note)}</div>` : ''}
@@ -5558,6 +5561,13 @@ function openProfile(id) {
 function elTitle() { return { intern4: 'ผลตรวจสอบการออกฝึกงาน ชั้นปีที่ ' + EL.data.year, intern6: 'ผลตรวจสอบการออกฝึกงาน ชั้นปีที่ ' + EL.data.year, grad: 'ผลตรวจสอบสำเร็จการศึกษา ชั้นปีที่ ' + EL.data.year, overdue: 'รายชื่อนักศึกษาตกค้าง (ยังไม่ผ่านเกณฑ์สำเร็จการศึกษา)' }[EL.mode]; }
 function elCondText() { return (EL.data.cfg.conds || []).filter(c => c.on).map(c => (c.name || EL.data.types[c.type].label) + elCondSum(c, EL.data.types[c.type]).replace(/<[^>]+>/g, '').replace(/\s*·\s*ไม่ตรวจ\s+[A-Z0-9,\s]+/g, '') + (c.sev === 'warn' ? ' (แจ้งเตือน)' : '')).join(' · '); }
 /** รายวิชา F / I ของ 1 คน สำหรับรายงาน: รหัส ชื่อ · ประวัติเกรด (ภาค/ปี) · แก้แล้ว/ยังไม่แก้ */
+/** แยกข้อมูลรายวิชา F/U/I: ติดภาคไหน · แก้ภาคไหน · สถานะ */
+function elFIInfo(x) {
+  const T = (x.tries || []).map(t => { const m = String(t).match(/^(\S+)\s*(?:\((.+?)\))?/) || []; return { g: m[1] || '', t: m[2] || '' }; });
+  const bad = T.filter(t => /^(F|U|I)$/.test(t.g)), last = T[T.length - 1] || {};
+  return { kind: x.kind === 'F' ? (bad.some(t => t.g === 'U') && !bad.some(t => t.g === 'F') ? 'U' : 'F') : 'I', badTerms: bad.map(t => t.g + (t.t ? ' ' + t.t : '')).join(', '), fixTerm: x.fixed ? last.t : '',
+    st: x.fixed ? 'แก้แล้ว' + (last.t ? ' ภาค ' + last.t : '') + ' (' + x.now + ')' : x.now === 'I' ? 'ยังติด I' : 'ยังไม่แก้ (' + (x.now || 'F') + ')' };
+}
 function elFIText(r) {
   const L = (r.fl || []); if (!L.length) return '';
   return L.map(x => `${x.code}${x.name ? ' ' + x.name : ''}: ${x.tries.join(' → ')} · ${x.fixed ? 'แก้แล้ว (' + x.now + ')' : x.now === 'I' ? 'ติด I ยังไม่แก้' : 'ติด ' + (x.now || 'F') + ' ยังไม่แก้'}`).join('\n');
