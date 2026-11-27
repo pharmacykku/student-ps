@@ -2026,8 +2026,15 @@ function eligCfg_() {
       if (Number(c.v || 0) < 2 && (m === 'grad' || m === 'overdue')) eligDefaults_()[m].conds.filter(x => (x.type === 'computer' || x.type === 'misCat') && !D[m].conds.some(y => y.type === x.type)).forEach(x => D[m].conds.push(x));
     }
   });
-  ELIG_MODES.forEach(m => D[m].conds = eligMergePlan_(D[m].conds));
+  ELIG_MODES.forEach(m => D[m].conds = eligDedupe_(eligMergePlan_(D[m].conds)));
   return D;
+}
+/** เงื่อนไขแบบไม่มีค่า (เช่น มีผลการเรียนครบ) ที่ซ้ำกัน → เก็บอันเดียว (ใช้อันที่ "ต้องผ่าน" ก่อน) · id ซ้ำ → ทำให้ไม่ซ้ำ */
+function eligDedupe_(conds) {
+  const keep = {}, out = [];
+  conds.forEach(c => { const T = ELIG_TYPES[c.type]; if (T && !T.p && !c.name) { const k = c.type; if (keep[k] === undefined) { keep[k] = out.length; out.push(c); } else { const o = out[keep[k]]; if (c.on && (!o.on || (c.sev === 'block' && o.sev !== 'block'))) out[keep[k]] = c; } } else out.push(c); });
+  const seen = {}; out.forEach((c, i) => { if (!c.id || seen[c.id]) c.id = c.type + '_' + i; seen[c.id] = 1; });
+  return out;
 }
 function eligCleanCond_(x, i) {
   const T = ELIG_TYPES[x.type]; if (!T) throw new Error('ไม่รู้จักประเภทเงื่อนไข ' + x.type);
@@ -2048,7 +2055,7 @@ function adminEligSaveCfg(token, mode, o) {
   const s = auth_(token, true); tabGuard_(s, 'pElig');
   if (ELIG_MODES.indexOf(mode) < 0) throw new Error('โหมดไม่ถูกต้อง');
   let C = {}; try { C = JSON.parse(getSettings_().ELIG_CFG || '{}'); } catch (e) {}
-  const conds = [].concat(o.conds || []).slice(0, 30).map(eligCleanCond_);
+  const conds = eligDedupe_([].concat(o.conds || []).slice(0, 30).map(eligCleanCond_));
   const seen = {}; conds.forEach((c, i) => { if (seen[c.id]) c.id = c.type + '_' + i; seen[c.id] = 1; });
   const y = Math.round(Number(o.year)); if (!(y >= 1 && y <= 8)) throw new Error('ชั้นปีไม่ถูกต้อง');
   C[mode] = { year: y, conds, v: ELIG_VER }; if (mode === 'overdue') C[mode].years = Math.max(1, Math.round(Number(o.years) || 6));
